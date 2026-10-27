@@ -23,6 +23,12 @@ $Astro      = Join-Path $Root 'node_modules\astro\bin\astro.mjs'
 
 $env:ASTRO_TELEMETRY_DISABLED = '1'
 $env:PYTHONIOENCODING = 'utf-8'
+$env:PYTHONUTF8 = '1'
+
+# This network cannot reach github.com:443, but ssh.github.com:443 answers.
+# ~/.ssh/config maps github.com onto that endpoint, and we give Git a
+# non-interactive SSH command so a prompt can never hang the script.
+$env:GIT_SSH_COMMAND = 'ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=20 -o BatchMode=yes'
 
 Set-Location -LiteralPath $Root
 

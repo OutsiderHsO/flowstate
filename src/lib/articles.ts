@@ -64,10 +64,16 @@ export async function getFiction(lang: Lang): Promise<FictionEntry[]> {
     const sa = a.data.series;
     const sb = b.data.series;
 
+    // Serials are the deepest works on a shelf; lead with them.
+    if (sa && !sb) return -1;
+    if (!sa && sb) return 1;
+
     // Standalone works come before serials, newest first.
-    if (!sa && !sb) return byDateDesc(a, b);
-    if (!sa) return -1;
-    if (!sb) return 1;
+    if (!sa && !sb) {
+      // An explicitly featured piece still wins among standalones.
+      if (a.data.featured !== b.data.featured) return a.data.featured ? -1 : 1;
+      return byDateDesc(a, b);
+    }
 
     // Different serials: newest series first.
     if (sa !== sb) {
