@@ -62,15 +62,34 @@ automotive-journal/
 
 前置：Node.js ≥ 22（本项目在 v24 上验证），pnpm ≥ 10。
 
+### 3a. 本机直接运行（推荐，无需配置环境变量）
+
+本机的 Node 与 pnpm 由 DSH 内置运行时提供，**不在系统 PATH 里**，所以直接敲 `pnpm dev`
+会报 `无法将"pnpm"项识别为 cmdlet`。仓库根目录已附 `dev.ps1`，它会自动使用内置运行时：
+
+```powershell
+cd C:\Users\admin\Documents\deepseek-harness\default-workspace\automotive-journal
+
+.\dev.ps1              # 启动开发服务器 → http://localhost:4321
+.\dev.ps1 build        # 生产构建，输出到 dist\
+.\dev.ps1 preview      # 预览已构建的 dist\
+.\dev.ps1 install      # 重新/首次安装依赖
+```
+
+如果提示「禁止运行脚本」，改用：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\dev.ps1
+```
+
+> 脚本不会修改 PATH、不会全局安装任何东西。需要时可以直接编辑其中的 `$Node` / `$Pnpm` 路径。
+
+### 3b. 在你自己的机器上（已装 Node + pnpm）
+
 ```bash
 cd automotive-journal
 pnpm install
 pnpm dev            # http://localhost:4321
-```
-
-生产构建与预览：
-
-```bash
 pnpm build          # 输出到 dist/
 pnpm preview        # 本地预览构建结果
 ```
@@ -167,9 +186,14 @@ translationKey: my-slug  # 中英两篇用同一个 key，语言切换才能互�
 ## 7. 已知限制与注意事项
 
 - **Git 安装**：本机原本没有 Git。已安装便携版 MinGit 到 `C:\Users\admin\.tools\git`，
-  未修改全局 PATH 与全局 git 配置。需要时可：
+  未修改全局 PATH 与全局 git 配置。同样不在 PATH 中，需要时直接写全路径：
   ```powershell
-  & "C:\Users\admin\.tools\git\cmd\git.exe" --version
+  & "C:\Users\admin\.tools\git\cmd\git.exe" status
+  & "C:\Users\admin\.tools\git\cmd\git.exe" log --oneline
+  ```
+  想长期方便，可执行一次（仅当前用户，可撤销）：
+  ```powershell
+  [Environment]::SetEnvironmentVariable('Path', [Environment]::GetEnvironmentVariable('Path','User') + ';C:\Users\admin\.tools\git\cmd', 'User')
   ```
 - **内容均为占位**：所有文章都是版式示例，不是真实测评；首页与页脚都有明确标注。
 - **未使用的预留**：`readingTime` 的中文算法按字符数估算，英文按词数估算，仅作参考。
