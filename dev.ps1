@@ -37,7 +37,10 @@ Set-Location -LiteralPath $ProjectRoot
 
 switch ($Task) {
   'install' {
-    & $Node $Pnpm install --no-frozen-lockfile
+    # Keep the package cache inside the project on this machine. The default
+    # location is not writable under DSH's sandbox. Cloud builds ignore this
+    # flag and use their own cache.
+    & $Node $Pnpm install --no-frozen-lockfile --store-dir "$ProjectRoot\.store-local"
   }
   'build' {
     & $Node $Astro build

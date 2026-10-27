@@ -1,14 +1,19 @@
 {
-  "name": "automotive-journal",
+  "name": "flowstate",
   "type": "module",
   "version": "0.1.0",
   "private": true,
-  "description": "A personal automotive culture journal. Bilingual (zh/en), static, dark editorial.",
+  "description": "FLOWSTATE — automotive writing and fiction by Sayo//n4ra.",
+  "packageManager": "pnpm@11.8.0",
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "check": "astro sync"
+    "check": "astro sync",
+    "lint:content": "python scripts/newpost.py lint"
   },
   "dependencies": {
     "astro": "^6.4.8"
