@@ -1,0 +1,90 @@
+---
+// Shared 404 page. Kept bilingual-friendly by linking to both entry points,
+// since we cannot know which language the visitor came from.
+import '../styles/global.css';
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>404 — FLOWSTATE</title>
+    <meta name="robots" content="noindex" />
+    <meta name="theme-color" content="#0a0a0a" />
+    <meta name="color-scheme" content="dark" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <main class="notfound">
+      <p class="eyebrow"><span class="idx">404</span> — <span>Not Found</span></p>
+      <h1 class="notfound__title">这里什么都没有</h1>
+      <p class="notfound__lead">这个地址不存在，或者内容已经被移走。</p>
+
+      <nav class="notfound__links" aria-label="Return">
+        <a href="/zh/">
+          <span class="mono">01</span>
+          <span>汽车 / 文学</span>
+          <span aria-hidden="true">→</span>
+        </a>
+        <a href="/en/">
+          <span class="mono">02</span>
+          <span>Cars / Fiction</span>
+          <span aria-hidden="true">→</span>
+        </a>
+      </nav>
+    </main>
+  </body>
+</html>
+
+<style>
+  .notfound {
+    min-height: 100dvh;
+    display: grid;
+    align-content: center;
+    gap: 1rem;
+    max-width: 640px;
+    margin-inline: auto;
+    padding-inline: var(--gutter);
+  }
+
+  .notfound__title {
+    font-size: var(--step-3);
+    letter-spacing: -0.04em;
+    line-height: 1.04;
+    padding-bottom: 0.06em;
+  }
+
+  .notfound__lead {
+    color: var(--ink-muted);
+    max-width: 42ch;
+  }
+
+  .notfound__links {
+    display: grid;
+    margin-top: 1.5rem;
+    border-top: 1px solid var(--line);
+  }
+
+  .notfound__links a {
+    display: grid;
+    grid-template-columns: 2rem minmax(0, 1fr) auto;
+    align-items: baseline;
+    gap: 0.9rem;
+    padding: 0.8rem 0.25rem;
+    border-bottom: 1px solid var(--line);
+    transition:
+      background 220ms var(--ease),
+      padding-inline 220ms var(--ease);
+  }
+
+  .notfound__links a:hover {
+    background: linear-gradient(90deg, var(--accent-wash), transparent 70%);
+    padding-inline: 0.7rem 0.25rem;
+  }
+
+  .notfound__links .mono {
+    font-size: 0.62rem;
+    color: var(--ink-faint);
+  }
+</style>

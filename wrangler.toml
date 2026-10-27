@@ -1,21 +1,21 @@
 # Build settings for Cloudflare Pages.
 #
-# Connecting the repo in the dashboard also works, but committing this file
-# means the settings live with the code instead of in one person's account
-# settings. Cloudflare picks these up automatically.
+# The project is a Pages project (flowstate-b9y.pages.dev), which runs
+# `pnpm build` and publishes a directory. It does NOT run `wrangler deploy`,
+# so Pages-style `[build]` keys are correct here.
+#
+# An earlier revision used Workers static-assets keys (`[assets]` +
+# `compatibility_date`). Those are the wrong shape for Pages and caused
+# "Missing entry-point to Worker script or to assets directory".
 #
 # Docs: https://developers.cloudflare.com/pages/configuration/build-configuration/
 
-# Astro 6 needs Node 22+; Cloudflare's default image may be newer or older,
-# so pin it explicitly.
 [build.environment]
+# Astro 6 requires Node 22+; pin it so the image cannot drift.
 NODE_VERSION = "22"
 PNPM_VERSION = "11.8.0"
 
 [build]
-# pnpm reads pnpm-workspace.yaml from the repo root for node-linker=hoisted,
-# so no install flags are needed here.
+# pnpm reads pnpm-workspace.yaml for node-linker=hoisted, so no extra flags.
 command = "pnpm build"
 publish = "dist"
-
-# The site is fully static; there is no server runtime to configure.

@@ -6,9 +6,9 @@ import { defineConfig } from 'astro/config';
 // alternates and Open Graph tags — if this is wrong, shared links point at
 // the wrong host.
 //
-// Set DEPLOY_URL in Cloudflare's build environment to override it without
-// editing code. Falls back to the Cloudflare Pages URL below.
-const site = process.env.DEPLOY_URL ?? 'https://flowstate.pages.dev';
+// Set DEPLOY_URL in the Pages build environment to override without a code
+// change (e.g. after attaching a custom domain).
+const site = process.env.DEPLOY_URL ?? 'https://flowstate-b9y.pages.dev';
 
 export default defineConfig({
   site,
@@ -21,8 +21,9 @@ export default defineConfig({
       theme: 'github-dark-dimmed',
       wrap: true,
     },
-    // Keep CJK line breaking readable in long prose.
-    smartypants: false,
+    // The old top-level `smartypants` option is deprecated and logged a
+    // warning in the CI build. Smart quotes are unwanted here anyway: they
+    // mangle Chinese punctuation in prose.
   },
   vite: {
     ssr: {
