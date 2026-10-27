@@ -68,7 +68,12 @@ const isoDate = (d: Date) => d.toISOString().slice(0, 10);
       {
         carLead && (
           <article class="lead">
-            <a class="lead__media" href={entryHref(carLead, 'automotive')} tabindex="-1" aria-hidden="true">
+            <a
+              class="lead__media neon-frame"
+              href={entryHref(carLead, 'automotive')}
+              tabindex="-1"
+              aria-hidden="true"
+            >
               {carLead.data.image ? (
                 <img
                   src={carLead.data.image}
@@ -307,9 +312,30 @@ const isoDate = (d: Date) => d.toISOString().slice(0, 10);
     border-bottom-color: var(--track-accent-dim);
   }
 
+  /* Neon underglow, automotive track only (the other track sets boost to 0). */
+  .track--automotive .track__port {
+    border-bottom-color: transparent;
+    background-image: linear-gradient(90deg, var(--neon-a), var(--neon-b) 60%, transparent);
+    background-repeat: no-repeat;
+    background-size: 100% 1px;
+    background-position: 0 100%;
+  }
+
+  .track--automotive .track__port:hover {
+    box-shadow: 0 calc(6px * var(--neon-boost)) calc(22px * var(--neon-boost))
+      calc(-6px * var(--neon-boost)) var(--neon-b-dim);
+  }
+
   .track__index {
     font-size: 0.68rem;
     color: var(--track-accent);
+  }
+
+  /* The index numbers are the one permanently-lit element on the
+     automotive track — small, so it reads as a pilot light. */
+  .track--automotive .track__index {
+    color: var(--neon-b);
+    text-shadow: 0 0 calc(10px * var(--neon-boost)) rgba(34, 211, 238, calc(0.55 * var(--neon-boost)));
   }
 
   .track__label {

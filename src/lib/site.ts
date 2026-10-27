@@ -43,3 +43,42 @@ export const LANG_LABEL: Record<Lang, string> = {
  */
 export const SECTIONS = ['automotive', 'fiction'] as const;
 export type SectionKey = (typeof SECTIONS)[number];
+
+/**
+ * Feature switches.
+ *
+ * Everything here defaults to the current behaviour, so flipping a flag is
+ * the only change needed to enable/disable a capability later. Add new
+ * flags here rather than hard-coding conditions inside components.
+ */
+export const FEATURES = {
+  /** Neon rim-light on the automotive track. Set false to go fully plain. */
+  neon: true,
+  /** Show reading-progress bar on article/story pages. */
+  readingProgress: false,
+  /** Show prev/next links at the bottom of articles and stories. */
+  prevNext: false,
+  /** Generate /rss.xml. */
+  rss: false,
+  /** Show estimated word count on cards. */
+  wordCountOnCards: true,
+} as const;
+
+export type FeatureKey = keyof typeof FEATURES;
+
+/**
+ * Navigation model. Pages read from this instead of hard-coding routes,
+ * so adding a third track later is a single-array edit.
+ */
+export type TrackDef = {
+  key: SectionKey;
+  path: string;
+  /** Which data-track value the page shell should use. */
+  track: 'automotive' | 'fiction';
+  indexLabel: string;
+};
+
+export const TRACKS: Record<SectionKey, TrackDef> = {
+  automotive: { key: 'automotive', path: '/automotive/', track: 'automotive', indexLabel: '01' },
+  fiction: { key: 'fiction', path: '/fiction/', track: 'fiction', indexLabel: '02' },
+};

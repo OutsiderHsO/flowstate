@@ -55,7 +55,7 @@ const hasTags = data.tags.length > 0;
         <span>{minutes} {strings.labels.minRead}</span>
       </p>
 
-      <h1 class="article__title">{data.title}</h1>
+      <h1 class="article__title neon-text">{data.title}</h1>
       <p class="article__dek">{data.dek}</p>
 
       {
@@ -300,8 +300,10 @@ const hasTags = data.tags.length > 0;
     display: block;
     width: 28px;
     height: 1px;
-    background: var(--accent);
+    background: linear-gradient(90deg, var(--neon-a), var(--neon-b));
     margin-bottom: 0.7rem;
+    /* Ordered by --neon-boost; invisible when neon is off or on other tracks. */
+    box-shadow: 0 0 calc(10px * var(--neon-boost)) rgba(34, 211, 238, calc(0.45 * var(--neon-boost)));
   }
 
   .prose p {

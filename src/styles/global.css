@@ -52,6 +52,48 @@
 
   --radius: 2px;
   --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+
+  /* ----------------------------------------------------------------
+     NEON SYSTEM
+     Two hues, used at low intensity. Every glow goes through these
+     variables, so the whole system can be dialled down or switched
+     off from one place (see `data-track` / `data-neon` below).
+     ---------------------------------------------------------------- */
+  --neon-a: #a855f7; /* violet */
+  --neon-b: #22d3ee; /* electric cyan */
+  --neon-a-dim: rgba(168, 85, 247, 0.32);
+  --neon-b-dim: rgba(34, 211, 238, 0.32);
+
+  /* Glow bundles — keep opacity low; these are accents, not signage. */
+  --glow-text-a: 0 0 0.6em rgba(168, 85, 247, 0.45);
+  --glow-text-b: 0 0 0.6em rgba(34, 211, 238, 0.4);
+  --glow-line-a: 0 0 6px rgba(168, 85, 247, 0.55), 0 0 18px rgba(168, 85, 247, 0.22);
+  --glow-line-b: 0 0 6px rgba(34, 211, 238, 0.5), 0 0 18px rgba(34, 211, 238, 0.2);
+  --glow-box-b: 0 0 0 1px rgba(34, 211, 238, 0.28), 0 0 22px rgba(34, 211, 238, 0.12);
+
+  /* Neon intensity multiplier: 0 = off, 1 = normal. */
+  --neon-boost: 0;
+}
+
+/*
+ * Neon is ON for the automotive track only — a restrained Speedhunters-ish
+ * rim light, not a nightclub. Fiction and About stay quiet.
+ *
+ * To disable neon site-wide: set data-neon="off" on <html> (see Base.astro).
+ */
+body[data-track='automotive'] {
+  --neon-boost: 1;
+}
+
+html[data-neon='off'] body {
+  --neon-boost: 0;
+}
+
+/* Respect users who ask the OS to reduce motion / flashiness. */
+@media (prefers-reduced-motion: reduce) {
+  body {
+    --neon-boost: 0;
+  }
 }
 
 /*
@@ -247,6 +289,79 @@ textarea {
 .link-underline:hover,
 .link-underline:focus-visible {
   background-size: 100% 1px;
+}
+
+/* ------------------------------------------------------------------ */
+/* Neon utilities                                                     */
+/*                                                                    */
+/* Every effect is multiplied by --neon-boost (0 or 1), so a track    */
+/* with neon off renders identically to the plain design. That keeps  */
+/* the system additive: new components can opt in without branching.  */
+/* ------------------------------------------------------------------ */
+
+/* A text glow, strongest at the top of a title. */
+.neon-text {
+  text-shadow:
+    0 0 calc(0.45em * var(--neon-boost)) rgba(168, 85, 247, calc(0.55 * var(--neon-boost))),
+    0 0 calc(1em * var(--neon-boost)) rgba(34, 211, 238, calc(0.3 * var(--neon-boost)));
+}
+
+/* A hairline that hangs off the trailing edge of a heading. */
+.neon-rule {
+  position: relative;
+}
+
+.neon-rule::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    var(--neon-a) 0%,
+    var(--neon-b) 45%,
+    transparent 100%
+  );
+  opacity: calc(0.55 * var(--neon-boost));
+  box-shadow: 0 0 calc(8px * var(--neon-boost)) var(--neon-b-dim);
+  pointer-events: none;
+}
+
+/* Small monospace chip with a glowing border (ratings, tags, counters). */
+.neon-chip {
+  border-color: rgba(34, 211, 238, calc(0.28 * var(--neon-boost)));
+  box-shadow: 0 0 calc(14px * var(--neon-boost)) rgba(34, 211, 238, calc(0.1 * var(--neon-boost)));
+}
+
+/*
+ * Image frame glow: a violet-to-cyan rim that only appears on hover.
+ * Applied to card media so the grid lights up as the pointer moves.
+ */
+.neon-frame {
+  position: relative;
+}
+
+.neon-frame::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 1px solid transparent;
+  background:
+    linear-gradient(135deg, var(--neon-a-dim), transparent 45%, var(--neon-b-dim)) border-box;
+  mask-image: linear-gradient(#000, #000);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 320ms var(--ease);
+  pointer-events: none;
+  box-shadow: inset 0 0 calc(26px * var(--neon-boost)) rgba(34, 211, 238, calc(0.12 * var(--neon-boost)));
+}
+
+.neon-frame:hover::after,
+.neon-frame:focus-within::after {
+  opacity: var(--neon-boost);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -48,7 +48,7 @@ const filterHref = (key: string | null) =>
 >
   <section class="wrap page-head">
     <p class="eyebrow"><span class="idx">01</span> — {strings.nav.automotive}</p>
-    <h1 class="page-head__title">{strings.sections.index}</h1>
+    <h1 class="page-head__title neon-text">{strings.sections.index}</h1>
     <p class="page-head__count mono">
       {String(list.length).padStart(2, '0')} {lang === 'zh' ? '篇文章' : 'entries'}
     </p>
@@ -159,9 +159,27 @@ const filterHref = (key: string | null) =>
     color: var(--ink-strong);
   }
 
+  /* Active filter: a lit underline rather than a lit box — quieter, still
+     unmistakably neon. Sits just above the container rule so the glow has
+     room to bleed; collapses to a plain accent line when neon is off. */
   .filters__link.is-active {
     color: var(--accent-bright);
-    border-bottom-color: var(--accent);
+    border-bottom-color: transparent;
+    position: relative;
+  }
+
+  .filters__link.is-active::after {
+    content: '';
+    position: absolute;
+    left: 0.35rem;
+    right: 0.35rem;
+    bottom: 3px;
+    height: 2px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--neon-a), var(--neon-b));
+    box-shadow:
+      0 0 calc(8px * var(--neon-boost)) rgba(34, 211, 238, calc(0.9 * var(--neon-boost))),
+      0 0 calc(20px * var(--neon-boost)) rgba(168, 85, 247, calc(0.6 * var(--neon-boost)));
   }
 
   .filters__count {

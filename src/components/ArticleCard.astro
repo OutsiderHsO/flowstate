@@ -19,7 +19,7 @@ const pad = String(index).padStart(2, '0');
 ---
 
 <article class:list={['card', `card--${variant}`]}>
-  <a class="card__media" href={href} tabindex="-1" aria-hidden="true">
+  <a class="card__media neon-frame" href={href} tabindex="-1" aria-hidden="true">
     {
       data.image ? (
         <img src={data.image} alt={data.imageAlt ?? ''} loading="lazy" decoding="async" />

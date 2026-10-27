@@ -1,5 +1,5 @@
 ---
-import { SITE, LOCALE, LANGS, LANG_LABEL, type Lang } from '../lib/site';
+import { SITE, LOCALE, LANGS, LANG_LABEL, FEATURES, type Lang } from '../lib/site';
 import { t } from '../lib/i18n';
 import '../styles/global.css';
 
@@ -44,7 +44,7 @@ const isActive = (key: string) => track === key;
 ---
 
 <!doctype html>
-<html lang={LOCALE[lang]}>
+<html lang={LOCALE[lang]} data-neon={FEATURES.neon ? 'on' : 'off'}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />

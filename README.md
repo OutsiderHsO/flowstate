@@ -51,7 +51,8 @@ automotive-journal/
 │  ├─ favicon.svg
 │  └─ images/placeholder-0*.svg   # 自制占位图，无第三方素材
 ├─ scripts/
-│  └─ shot.mjs               # 开发辅助：按真实移动视口截图（可选）
+│  ├─ shot.mjs               # 开发辅助：按真实移动视口截图（可选）
+│  └─ pdf2md.py              # PDF / Word → Markdown 导入工具
 └─ src/
    ├─ content.config.ts      # 两个内容集合的 schema
    ├─ content/
@@ -181,7 +182,41 @@ translationKey: night-platform   # 可选！不填就是单语言作品
 
 不会出现 404。这也是为什么中文作品不会出现在英文站列表里。
 
-### 4.4 关于图片
+### 4.4 从 PDF / Word 导入已有文章
+
+已有作品存在 PDF 里时，不用手打。`scripts/pdf2md.py` 会提取正文、
+重建段落、并生成带好 frontmatter 的 `.md`：
+
+```powershell
+# 先预览，不写文件
+python scripts/pdf2md.py 我的小说.pdf --track fiction --lang zh --slug my-story --dry-run
+
+# 确认无误后正式写入 src/content/fiction/zh/my-story.md
+python scripts/pdf2md.py 我的小说.pdf --track fiction --lang zh --slug my-story
+```
+
+参数说明：
+
+| 参数 | 说明 |
+| --- | --- |
+| `--track` | `fiction` 或 `automotive` |
+| `--lang` | `zh` 或 `en` |
+| `--slug` | 输出文件名（不含扩展名）；不填则从标题自动生成 |
+| `--title` | 手动指定标题（覆盖自动识别） |
+| `--dry-run` | 只打印结果，不写文件 |
+
+**它的行为**：
+- PDF 用**位置感知**提取（读取每行 y 坐标），用行距判断段落分隔，否则 PDF 会把所有段落压成一整块；
+- 自动识别首行标题，并在生成时移入 frontmatter；
+- 生成的文件默认 `draft: true`，**不会立刻发布**；
+- 已存在同名文件时**拒绝覆盖**。
+
+**限制**：只支持文字版 PDF。扫描件（图片型 PDF）提不出文字，脚本会明确报错并建议先 OCR。
+导入后请务必通读一遍——诗歌、对话、列表的换行可能仍需手动调整。
+
+依赖：`pip install pypdf python-docx`（本机已装好）。
+
+### 4.5 关于图片
 
 - 只使用**你自己拍摄/绘制或已获授权**的图片。仓库里的 `placeholder-*.svg` 均为自制矢量占位图。
 - 放进 `public/images/`，用 `/images/文件名` 引用，不要外链热链。
@@ -205,6 +240,33 @@ translationKey: night-platform   # 可选！不填就是单语言作品
 
 原则：**除图片外不堆砌车辆元素**。秩序来自编号（`01 —`）、细分割线与等宽元信息。
 小说页刻意换用衬线体、更宽行高与居中的场景分隔符——是阅读，不是扫描。
+
+### 霓虹系统 / Neon
+
+只在**汽车板块**启用，走 Speedhunters 那类「克制的边缘光」路线，不是夜店招牌。
+主色：紫罗兰 `#a855f7` + 电青 `#22d3ee`。
+
+| 开关 | 位置 | 作用 |
+| --- | --- | --- |
+| `FEATURES.neon` | `src/lib/site.ts` | 全站开关，设 `false` 即完全关闭 |
+| `--neon-boost` | `global.css` | 强度系数，`0` 关闭 / `1` 正常 |
+| `data-track` | `<body>` | 只有 `automotive` 打开，文学与关于页为 0 |
+| `prefers-reduced-motion` | 系统设置 | 用户开启减弱动效时自动关闭 |
+
+所有发光效果都乘以 `--neon-boost`，所以关闭时**渲染结果与纯设计完全一致**，
+不会有残留边框或空阴影。新增组件想用霓虹，套现成工具类即可：
+
+```html
+<h1 class="neon-text">标题</h1>          <!-- 文字光晕 -->
+<a class="neon-frame">…</a>              <!-- 图片边框光，悬停才出现 -->
+<span class="neon-chip">T</span>         <!-- 发光小标签 -->
+```
+
+### 功能开关 / Feature flags
+
+`src/lib/site.ts` 的 `FEATURES` 对象集中管理未来功能的开关，
+已预留 `readingProgress`、`prevNext`、`rss`、`wordCountOnCards`。
+再加新开关时**只改这里**，不要在各组件里散落条件判断。
 
 ---
 
