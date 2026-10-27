@@ -66,7 +66,7 @@ const isoDate = (d: Date) => d.toISOString().slice(0, 10);
       </a>
 
       {
-        carLead && (
+        carLead ? (
           <article class="lead">
             <a
               class="lead__media neon-frame"
@@ -102,6 +102,10 @@ const isoDate = (d: Date) => d.toISOString().slice(0, 10);
               <p class="lead__excerpt mono">{excerpt(carLead.body ?? '', 130)}</p>
             </div>
           </article>
+        ) : (
+          <div class="track__empty">
+            <p class="mono">{strings.labels.empty}</p>
+          </div>
         )
       }
 

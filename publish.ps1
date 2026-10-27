@@ -60,7 +60,19 @@ if ($Push) {
 }
 
 # --------------------------------------------------------------- 3. build
+#
+# Clear Astro's content cache first. It lives in node_modules/.astro and
+# persists parsed entries: deleting a .md file does NOT remove it from the
+# store, so the previous build kept rendering 5 articles whose source files
+# were already gone. A stale cache silently keeps deleted content live.
 Step 'Building the site'
+foreach ($stale in @('node_modules\.astro', '.astro')) {
+  $p = Join-Path $Root $stale
+  if (Test-Path -LiteralPath $p) {
+    Remove-Item -LiteralPath $p -Recurse -Force -ErrorAction Continue
+  }
+}
+
 & $Node $Astro build
 if ($LASTEXITCODE -ne 0) {
   Write-Host ''
