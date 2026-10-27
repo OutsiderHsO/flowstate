@@ -9,3 +9,27 @@ nodeLinker: hoisted
 allowBuilds:
   esbuild: true
   sharp: true
+
+# ---------------------------------------------------------------- supply chain
+#
+# pnpm refuses to install a version published less than `minimumReleaseAge`
+# minutes ago (default 1440 = 1 day), so a freshly published (or freshly
+# compromised) release cannot reach a build. Cloudflare enforces that default;
+# this machine happened to resolve with the check disabled, so the lockfile
+# captured versions only hours old and the cloud build was rejected.
+#
+# The fix is to pin those packages to the newest *mature* version instead of
+# weakening the policy. Both are transitive dependencies:
+#
+#   mdast-util-to-markdown 2.2.1  (8h old)  -> 2.2.0   markdown AST serializer
+#   postcss                8.5.32 (18h old) -> 8.5.31  CSS processor
+#
+# Remove an entry once the upstream version has aged past a day; the
+# override then only pins a version that pnpm would have chosen anyway.
+overrides:
+  mdast-util-to-markdown: 2.2.0
+  postcss: 8.5.31
+
+# Explicit is better than implicit: state the policy we build under so local
+# and cloud installs behave identically.
+minimumReleaseAge: 1440

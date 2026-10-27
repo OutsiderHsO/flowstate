@@ -110,21 +110,24 @@ if ($Full) {
   $installExit = $LASTEXITCODE
   $log = Get-Content $installLog -Raw -ErrorAction SilentlyContinue
 
-  # This machine has no `npm` on PATH, and sharp's postinstall shells out to
-  # `npm`. That is a local-environment gap, not a defect: sharp is only
-  # needed for astro:assets image optimisation, which this project does not
-  # use. Cloudflare's build image ships npm, so the same script passes there.
-  $npmMissing = $log -match "'npm' is not recognized"
-  $otherError = $log -match '\[ERR_PNPM_FROZEN_LOCKFILE|ERR_PNPM_LOCKFILE|ERR_PNPM_NO_MATCHING_VERSION'
+  # This machine has no `npm`/`node` on PATH, and dependency postinstall
+  # scripts shell out to them. That is a local-environment gap, not a defect;
+  # Cloudflare's build image has both.
+  $toolMissing = $log -match "'(npm|node)' is not recognized"
+  $policyError = $log -match 'ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION|Lockfile failed supply-chain'
+  $realError = $log -match '\[ERR_PNPM_FROZEN_LOCKFILE|ERR_PNPM_LOCKFILE|ERR_PNPM_NO_MATCHING_VERSION'
 
-  if ($otherError) {
+  if ($policyError) {
+    Bad 'lockfile contains packages newer than minimumReleaseAge — Cloudflare will reject it'
+    Write-Host '        pin the offending packages under `overrides` in pnpm-workspace.yaml' -ForegroundColor Yellow
+  }
+  elseif ($realError) {
     Bad 'frozen-lockfile install failed — the lockfile is out of sync with package.json'
     Write-Host '        run: .\dev.ps1 install   then commit pnpm-lock.yaml' -ForegroundColor Yellow
   }
-  elseif ($installExit -ne 0 -and $npmMissing) {
-    Warn 'sharp postinstall could not run: this machine has no npm on PATH'
-    Write-Host '        harmless here (sharp is unused; the site has no astro:assets imports)' -ForegroundColor DarkGray
-    Write-Host '        Cloudflare image includes npm, so the cloud build is unaffected' -ForegroundColor DarkGray
+  elseif ($installExit -ne 0 -and $toolMissing) {
+    Warn 'dependency postinstall scripts could not run: no npm/node on PATH here'
+    Write-Host '        harmless locally (Cloudflare has both); the lockfile and build still work' -ForegroundColor DarkGray
   }
   elseif ($installExit -eq 0) {
     Ok 'frozen-lockfile install succeeded (CI will work)'
@@ -132,6 +135,30 @@ if ($Full) {
   else {
     Bad "install failed with exit code $installExit — see $installLog"
   }
+}
+
+# ------------------------------------------------ supply-chain policy check
+# Cloudflare enforces pnpm's default minimumReleaseAge (1440 min). This machine
+# resolved without it once, so a fresh cloud build rejected the lockfile. Verify
+# the lockfile passes the *strict* policy before every push.
+Head 'Supply-chain policy (as Cloudflare enforces it)'
+$policyLog = Join-Path $env:TEMP 'flowstate-policy.log'
+$env:npm_config_minimumReleaseAge = '1440'
+$env:npm_config_minimumReleaseAgeStrict = 'true'
+& $Node $Pnpm install --frozen-lockfile --lockfile-only --store-dir "$Root\.store-local" *> $policyLog
+$policyExit = $LASTEXITCODE
+Remove-Item Env:\npm_config_minimumReleaseAge -ErrorAction SilentlyContinue
+Remove-Item Env:\npm_config_minimumReleaseAgeStrict -ErrorAction SilentlyContinue
+
+if ($policyExit -eq 0) {
+  Ok 'lockfile passes pnpm supply-chain policy (minimumReleaseAge = 1440)'
+}
+else {
+  Get-Content $policyLog | Where-Object { $_ -match 'was published|VIOLATION|failed' } |
+    Select-Object -First 6 | ForEach-Object { Write-Host "        $_" -ForegroundColor Yellow }
+  Bad 'lockfile fails the supply-chain policy — Cloudflare will reject this build'
+  Write-Host '        fix: add the listed packages to `overrides` in pnpm-workspace.yaml' -ForegroundColor Yellow
+  Write-Host '        pointing at the newest version older than 1 day' -ForegroundColor Yellow
 }
 
 # ------------------------------------------------------------------ summary
