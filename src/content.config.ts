@@ -44,7 +44,11 @@ const fiction = defineCollection({
     status: z.enum(['complete', 'ongoing']).default('complete'),
     /** Multi-part stories sharing a series title group together. */
     series: z.string().optional(),
-    part: z.number().int().positive().optional(),
+    /**
+     * Position within the series. Deliberately a float, not an int: authors
+     * commonly slot an interlude between 12 and 13 as "12.5".
+     */
+    part: z.number().nonnegative().optional(),
     tags: z.array(z.string()).default([]),
     image: z.string().optional(),
     imageAlt: z.string().optional(),

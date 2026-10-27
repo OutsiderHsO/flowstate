@@ -23,14 +23,56 @@ const validGenre =
   activeGenre && (Object.keys(GENRES) as string[]).includes(activeGenre) ? activeGenre : null;
 
 const list = validGenre ? all.filter((s) => s.data.genre === validGenre) : all;
-const [featured, ...rest] = list;
+
+/**
+ * Group serials into one shelf entry.
+ *
+ * A 14-chapter novel is *one* work, not fourteen covers. Chapters keep
+ * their own pages (linked from the table of contents) but the shelf shows
+ * the series once, with a chapter list underneath.
+ */
+type ShelfItem =
+  | { kind: 'story'; story: (typeof list)[number] }
+  | { kind: 'series'; title: string; chapters: (typeof list)[number]; words: number };
+
+const shelf: ShelfItem[] = [];
+const seenSeries = new Set<string>();
+
+for (const story of list) {
+  const series = story.data.series;
+  if (!series) {
+    shelf.push({ kind: 'story', story });
+    continue;
+  }
+  if (seenSeries.has(series)) continue;
+  seenSeries.add(series);
+  const chapters = list.filter((s) => s.data.series === series);
+  shelf.push({
+    kind: 'series',
+    title: series,
+    chapters: chapters[0],
+    words: chapters.reduce((sum, c) => sum + wordCount(c.body ?? '', lang), 0),
+  });
+}
+
+const serials = list.filter((s) => s.data.series);
+const seriesChapters = new Map<string, typeof list>();
+for (const s of serials) {
+  const key = s.data.series!;
+  if (!seriesChapters.has(key)) seriesChapters.set(key, []);
+  seriesChapters.get(key)!.push(s);
+}
+
+const [featuredItem, ...rest] = shelf;
 
 const filters: { key: string | null; label: string; count: number }[] = [
-  { key: null, label: strings.labels.filterAll, count: all.length },
+  { key: null, label: strings.labels.filterAll, count: shelf.length },
   ...(Object.keys(GENRES) as GenreKey[]).map((key) => ({
     key,
     label: GENRES[key][lang],
-    count: all.filter((s) => s.data.genre === key).length,
+    count: shelf.filter((i) =>
+      i.kind === 'story' ? i.story.data.genre === key : i.chapters.data.genre === key,
+    ).length,
   })),
 ];
 
@@ -78,34 +120,77 @@ const totalWords = all.reduce((sum, s) => sum + wordCount(s.body ?? '', lang), 0
     </nav>
 
     {
-      list.length === 0 ? (
+      shelf.length === 0 ? (
         <p class="empty mono">{strings.labels.empty}</p>
       ) : (
         <>
-          {featured && (
+          {featuredItem.kind === 'series' ? (
             <article class="spotlight">
-              <a class="spotlight__link" href={entryHref(featured, 'fiction')}>
+              <div class="spotlight__link">
                 <p class="eyebrow">
                   <span class="idx">01</span>
                   <span aria-hidden="true">—</span>
                   <span>{strings.sections.featured}</span>
-                  {featured.data.nature === 'fanwork' && (
+                  <span class="tag-serial mono">
+                    {GENRES[featuredItem.chapters.data.genre][lang]} ·{' '}
+                    {seriesChapters.get(featuredItem.title)?.length ?? 0}
+                    {lang === 'zh' ? ' 章' : ' ch'}
+                  </span>
+                </p>
+                <h2 class="spotlight__title">{featuredItem.chapters.data.title}</h2>
+                <p class="spotlight__logline">{featuredItem.chapters.data.dek}</p>
+                <p class="spotlight__meta mono">
+                  <span>{featuredItem.title}</span>
+                  <span aria-hidden="true">/</span>
+                  <span>
+                    {formatCount(featuredItem.words)} {strings.fiction.wordCount}
+                  </span>
+                  <span aria-hidden="true">/</span>
+                  <span>
+                    {strings.fiction.rating} {featuredItem.chapters.data.rating}
+                  </span>
+                </p>
+              </div>
+              <ol class="toc-list">
+                {seriesChapters.get(featuredItem.title)?.map((ch, i) => (
+                  <li>
+                    <a class="toc-list__row" href={entryHref(ch, 'fiction')}>
+                      <span class="toc-list__num mono">{String(i + 1).padStart(2, '0')}</span>
+                      <span class="toc-list__title">{ch.data.title}</span>
+                      <span class="toc-list__meta mono">
+                        {formatCount(wordCount(ch.body ?? '', lang))} {strings.fiction.wordCount}
+                      </span>
+                    </a>
+                  </li>
+                ))}
+              </ol>
+            </article>
+          ) : (
+            <article class="spotlight">
+              <a class="spotlight__link" href={entryHref(featuredItem.story, 'fiction')}>
+                <p class="eyebrow">
+                  <span class="idx">01</span>
+                  <span aria-hidden="true">—</span>
+                  <span>{strings.sections.featured}</span>
+                  {featuredItem.story.data.nature === 'fanwork' && (
                     <span class="tag-fan mono">{strings.fiction.fandom}</span>
                   )}
                 </p>
-                <h2 class="spotlight__title">{featured.data.title}</h2>
-                <p class="spotlight__logline">{featured.data.dek}</p>
+                <h2 class="spotlight__title">{featuredItem.story.data.title}</h2>
+                <p class="spotlight__logline">{featuredItem.story.data.dek}</p>
                 <p class="spotlight__meta mono">
-                  {featured.data.fandom && <span class="spotlight__fandom">{featured.data.fandom}</span>}
-                  <span>{formatDate(featured.data.published, lang)}</span>
+                  {featuredItem.story.data.fandom && (
+                    <span class="spotlight__fandom">{featuredItem.story.data.fandom}</span>
+                  )}
+                  <span>{formatDate(featuredItem.story.data.published, lang)}</span>
                   <span aria-hidden="true">/</span>
                   <span>
-                    {formatCount(wordCount(featured.body ?? '', lang))}{' '}
+                    {formatCount(wordCount(featuredItem.story.body ?? '', lang))}{' '}
                     {strings.fiction.wordCount}
                   </span>
                   <span aria-hidden="true">/</span>
                   <span>
-                    {strings.fiction.rating} {featured.data.rating}
+                    {strings.fiction.rating} {featuredItem.story.data.rating}
                   </span>
                 </p>
               </a>
@@ -114,9 +199,33 @@ const totalWords = all.reduce((sum, s) => sum + wordCount(s.body ?? '', lang), 0
 
           {rest.length > 0 && (
             <div class="shelf-grid">
-              {rest.map((story, i) => (
-                <StoryCard story={story} lang={lang} index={i + 2} />
-              ))}
+              {rest.map((item, i) =>
+                item.kind === 'story' ? (
+                  <StoryCard story={item.story} lang={lang} index={i + 2} />
+                ) : (
+                  <article class="series-card">
+                    <a class="series-card__media" href={entryHref(item.chapters, 'fiction')}>
+                      <span class="series-card__count mono">
+                        {seriesChapters.get(item.title)?.length ?? 0}
+                        {lang === 'zh' ? ' 章' : ' ch'}
+                      </span>
+                    </a>
+                    <p class="eyebrow">
+                      <span class="idx">{String(i + 2).padStart(2, '0')}</span>
+                      <span aria-hidden="true">—</span>
+                      <span>{GENRES[item.chapters.data.genre][lang]}</span>
+                    </p>
+                    <h3 class="series-card__title">
+                      <a href={entryHref(item.chapters, 'fiction')} class="link-underline">
+                        {item.title}
+                      </a>
+                    </h3>
+                    <p class="series-card__meta mono">
+                      {formatCount(item.words)} {strings.fiction.wordCount}
+                    </p>
+                  </article>
+                ),
+              )}
             </div>
           )}
         </>
@@ -267,6 +376,114 @@ const totalWords = all.reduce((sum, s) => sum + wordCount(s.body ?? '', lang), 0
 
   .empty {
     padding: 3rem 0;
+    color: var(--ink-faint);
+  }
+
+  /* ---------------- chapter table of contents ---------------- */
+  .tag-serial {
+    padding: 0.05rem 0.35rem;
+    border: 1px solid var(--line-strong);
+    color: var(--ink-muted);
+    font-size: 0.58rem;
+    letter-spacing: 0.1em;
+  }
+
+  .toc-list {
+    border-top: 1px solid var(--line);
+  }
+
+  .toc-list li {
+    border-bottom: 1px solid var(--line);
+  }
+
+  .toc-list__row {
+    display: grid;
+    grid-template-columns: 2rem minmax(0, 1fr) auto;
+    align-items: baseline;
+    gap: 0.9rem;
+    padding: 0.62rem 0.25rem;
+    transition:
+      background 220ms var(--ease),
+      padding-inline 220ms var(--ease);
+  }
+
+  .toc-list__row:hover {
+    background: linear-gradient(90deg, var(--accent-wash), transparent 65%);
+    padding-inline: 0.7rem 0.25rem;
+  }
+
+  .toc-list__num {
+    font-size: 0.62rem;
+    color: var(--ink-faint);
+  }
+
+  .toc-list__title {
+    font-family: var(--font-serif);
+    font-size: 0.95rem;
+    color: var(--ink);
+    transition: color 200ms var(--ease);
+  }
+
+  .toc-list__row:hover .toc-list__title {
+    color: var(--accent-bright);
+  }
+
+  .toc-list__meta {
+    font-size: 0.6rem;
+    color: var(--ink-faint);
+    white-space: nowrap;
+  }
+
+  @media (max-width: 480px) {
+    .toc-list__row {
+      grid-template-columns: 1.8rem minmax(0, 1fr);
+    }
+    .toc-list__meta {
+      grid-column: 2;
+      padding-left: 0;
+    }
+  }
+
+  /* ---------------- series card on the shelf ---------------- */
+  .series-card {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .series-card__media {
+    display: grid;
+    place-items: end start;
+    aspect-ratio: 3 / 4;
+    padding: 0.7rem;
+    border: 1px solid var(--line);
+    background:
+      linear-gradient(160deg, var(--surface-2), var(--bg-sunken)),
+      var(--bg-sunken);
+    transition: border-color 240ms var(--ease);
+  }
+
+  .series-card__media:hover {
+    border-color: var(--accent-dim);
+  }
+
+  .series-card__count {
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+  }
+
+  .series-card__title {
+    margin-top: 0.5rem;
+    font-family: var(--font-serif);
+    font-size: 1.05rem;
+    line-height: 1.3;
+    padding-bottom: 0.05em;
+  }
+
+  .series-card__meta {
+    margin-top: 0.4rem;
+    font-size: 0.62rem;
     color: var(--ink-faint);
   }
 </style>

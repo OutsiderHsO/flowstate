@@ -41,9 +41,45 @@ export async function getLeadAutomotive(lang: Lang): Promise<AutomotiveEntry | u
 }
 
 // ---------------------------------------------------------------- fiction
+/**
+ * Stories for one language, ordered for a shelf.
+ *
+ * Plain date ordering is wrong for serials: every chapter shares the same
+ * publish date, so they come out scrambled. Sort by (series, part) first,
+ * keeping different works grouped, then newest-first across works.
+ */
 export async function getFiction(lang: Lang): Promise<FictionEntry[]> {
   const all = await getCollection('fiction', ({ data }) => !data.draft);
-  return all.filter((e) => entryLang(e) === lang).sort(byDateDesc);
+  const mine = all.filter((e) => entryLang(e) === lang);
+
+  const seriesFirst = new Map<string, number>();
+  for (const e of mine) {
+    const s = e.data.series;
+    if (s && !seriesFirst.has(s)) {
+      seriesFirst.set(s, e.data.published.getTime());
+    }
+  }
+
+  return mine.sort((a, b) => {
+    const sa = a.data.series;
+    const sb = b.data.series;
+
+    // Standalone works come before serials, newest first.
+    if (!sa && !sb) return byDateDesc(a, b);
+    if (!sa) return -1;
+    if (!sb) return 1;
+
+    // Different serials: newest series first.
+    if (sa !== sb) {
+      return (seriesFirst.get(sb) ?? 0) - (seriesFirst.get(sa) ?? 0);
+    }
+
+    // Same serial: follow the chapter order.
+    const pa = a.data.part ?? 0;
+    const pb = b.data.part ?? 0;
+    if (pa !== pb) return pa - pb;
+    return byDateDesc(a, b);
+  });
 }
 
 export async function getLeadFiction(lang: Lang): Promise<FictionEntry | undefined> {

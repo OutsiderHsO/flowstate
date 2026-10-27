@@ -216,6 +216,39 @@ python scripts/pdf2md.py 我的小说.pdf --track fiction --lang zh --slug my-st
 
 依赖：`pip install pypdf python-docx`（本机已装好）。
 
+### 4.4b 导入整本多章小说（重要）
+
+单篇用上面的 `pdf2md.py`；**有章节结构的长篇用 `novel_import.py`**，它一次生成每章一个文件。
+
+```powershell
+# 预览：列出识别到的章节与字数，不写文件
+python scripts/novel_import.py 利维坦.pdf --series leviathan --title 利维坦 --dry-run
+
+# 正式写入 src/content/fiction/zh/leviathan-ch1.md … ch13.md
+python scripts/novel_import.py 利维坦.pdf --series leviathan --title 利维坦 --write
+```
+
+`--series` 是文件名前缀，同一部作品的各章共用同一个 `series` 值，
+书架会自动把它们**合并成一个作品**并生成章节目录，而不是铺满十几张封面。
+
+**导入器处理的四个真实坑（都已在 `利维坦` 上验证）**：
+
+| 问题 | 现象 | 处理 |
+| --- | --- | --- |
+| 部首替换 | 门→`⻔`、车→`⻋`、风→`⻛` 等 22 个字 | `repair_cjk.py` 逐字映射 + 校验，全篇 4059 处修复为 0 残留 |
+| NFKC 连带破坏标点 | 全角 `，：（）…` 被转成半角 | 只对部首字符做 NFKC，并校验标点数不减少 |
+| 段落全部粘连 | 章节开头的「地点／时间」粘进正文 | 场景标签独立成段并渲染为斜体 slug 块 |
+| 文本顺序错乱 | 按 y 坐标排序反而倒序 | 改用 pypdf 默认提取顺序 |
+
+**质量校验**：导入后 1439 行原文中只有 27 行未出现在正文里，且全部是章节标题行
+（已移入 frontmatter）。**正文零丢失。**
+
+### 4.4c 连载作品的排序与导航
+
+- `series` 为同一部作品名（不要带“第1部/第2部”，否则会被当成两部作品）；
+- `part` 决定章节顺序，是**小数**类型，所以 12 与 13 之间可以插一章 `12.5`；
+- 章节目录在书架封面下，阅读页底部有「上一章 / 下一章」。
+
 ### 4.5 关于图片
 
 - 只使用**你自己拍摄/绘制或已获授权**的图片。仓库里的 `placeholder-*.svg` 均为自制矢量占位图。

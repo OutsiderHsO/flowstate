@@ -1,4 +1,4 @@
-// One-off dev helper: screenshot a page at a true mobile viewport via CDP.
+﻿// One-off dev helper: screenshot a page at a true mobile viewport via CDP.
 // Usage: node scripts/shot.mjs <url> <width> <height> <outfile>
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
@@ -51,7 +51,7 @@ async function main() {
   });
   console.log('viewport:', metrics.result.value);
 
-  const shot = await send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: true });
+  const shot = await send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false });
   fs.writeFileSync(out, Buffer.from(shot.data, 'base64'));
   console.log('wrote', out);
   ws.close();

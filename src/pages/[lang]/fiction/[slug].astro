@@ -41,12 +41,20 @@ const isFanwork = data.nature === 'fanwork';
 const isMature = data.rating === 'M' || data.rating === 'E';
 const hasTags = data.tags.length > 0;
 
-// Sibling parts: same series, same language.
-const siblings = data.series
-  ? (await getFiction(lang)).filter(
-      (s) => s.data.series === data.series && s.id !== entry.id,
-    )
+// Siblings in the same series, ordered by their `part` number so a serial
+// reads 1 → 2 → 12 → 12.5 → 13 regardless of publish date.
+const seriesEntries = data.series
+  ? (await getFiction(lang))
+      .filter((s) => s.data.series === data.series)
+      .sort((a, b) => (a.data.part ?? 0) - (b.data.part ?? 0))
   : [];
+
+const myIndex = seriesEntries.findIndex((s) => s.id === entry.id);
+const prevChapter = myIndex > 0 ? seriesEntries[myIndex - 1] : undefined;
+const nextChapter =
+  myIndex >= 0 && myIndex < seriesEntries.length - 1 ? seriesEntries[myIndex + 1] : undefined;
+const totalChapters = seriesEntries.length;
+const chapterOrdinal = myIndex >= 0 ? myIndex + 1 : 0;
 ---
 
 <Base
@@ -76,7 +84,12 @@ const siblings = data.series
             {strings.labels.chapterOf}
             {' · '}
             <span class="story-header__series-name">{data.series}</span>
-            {data.part && ` #${String(data.part).padStart(2, '0')}`}
+            {totalChapters > 1 && (
+              <>
+                {' · '}
+                {chapterOrdinal}/{totalChapters}
+              </>
+            )}
           </p>
         )
       }
@@ -147,6 +160,29 @@ const siblings = data.series
         <span aria-hidden="true">←</span> {strings.labels.backToList}
       </a>
     </footer>
+
+    {
+      totalChapters > 1 && (
+        <nav class="chapter-nav wrap" aria-label={lang === 'zh' ? '章节导航' : 'Chapter navigation'}>
+          {prevChapter ? (
+            <a class="chapter-nav__link chapter-nav__link--prev" href={entryHref(prevChapter, 'fiction')}>
+              <span class="chapter-nav__dir mono">← {lang === 'zh' ? '上一章' : 'Previous'}</span>
+              <span class="chapter-nav__title">{prevChapter.data.title}</span>
+            </a>
+          ) : (
+            <span />
+          )}
+          {nextChapter ? (
+            <a class="chapter-nav__link chapter-nav__link--next" href={entryHref(nextChapter, 'fiction')}>
+              <span class="chapter-nav__dir mono">{lang === 'zh' ? '下一章' : 'Next'} →</span>
+              <span class="chapter-nav__title">{nextChapter.data.title}</span>
+            </a>
+          ) : (
+            <span />
+          )}
+        </nav>
+      )
+    }
   </article>
 </Base>
 
@@ -334,6 +370,72 @@ const siblings = data.series
 
   .back:hover {
     color: var(--accent-bright);
+  }
+
+  /* ---------------- chapter navigation ---------------- */
+  .chapter-nav {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 1px;
+    max-width: 880px;
+    margin-inline: auto;
+    margin-top: clamp(1.5rem, 3vw, 2.25rem);
+    border-top: 1px solid var(--line);
+    background: var(--line);
+  }
+
+  .chapter-nav__link {
+    display: grid;
+    gap: 0.3rem;
+    padding: 1rem 0;
+    background: var(--bg);
+    transition: background 240ms var(--ease);
+  }
+
+  .chapter-nav__link:hover {
+    background: var(--bg-elevated);
+  }
+
+  .chapter-nav__link--next {
+    text-align: right;
+    align-items: end;
+    padding-left: 1rem;
+  }
+
+  .chapter-nav__link--prev {
+    padding-right: 1rem;
+  }
+
+  .chapter-nav__dir {
+    font-size: 0.64rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+
+  .chapter-nav__title {
+    font-family: var(--font-serif);
+    font-size: 0.95rem;
+    line-height: 1.35;
+    color: var(--ink-muted);
+    transition: color 200ms var(--ease);
+  }
+
+  .chapter-nav__link:hover .chapter-nav__title {
+    color: var(--accent-bright);
+  }
+
+  @media (max-width: 560px) {
+    .chapter-nav {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .chapter-nav__link--next {
+      text-align: left;
+      align-items: start;
+      padding-left: 0;
+      padding-top: 0.85rem;
+      border-top: 1px solid var(--line);
+    }
   }
 </style>
 

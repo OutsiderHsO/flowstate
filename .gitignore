@@ -9,6 +9,10 @@ node_modules/
 # local screenshots & tooling scratch
 .shots/
 
+# Python bytecode from the import scripts
+__pycache__/
+*.pyc
+
 # env & secrets — never commit
 .env
 .env.*
