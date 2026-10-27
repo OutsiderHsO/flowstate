@@ -2,30 +2,57 @@ import { defineCollection, z } from 'astro:content';
 import { glob } from 'astro/loaders';
 
 /**
- * Articles live in src/content/journal/<lang>/<slug>.md
- * The folder name is the language, so the route can be derived without
+ * Content lives in src/content/<collection>/<lang>/<slug>.md
+ * The folder name is the language, so routes are derived without
  * duplicating it in frontmatter.
  */
-const journal = defineCollection({
-  loader: glob({ pattern: '**/*.md', base: './src/content/journal' }),
+
+// ---------------------------------------------------------------- automotive
+const automotive = defineCollection({
+  loader: glob({ pattern: '**/*.md', base: './src/content/automotive' }),
   schema: z.object({
     title: z.string(),
-    /** One-sentence dek shown under the title. */
     dek: z.string(),
-    /** ISO date */
     published: z.coerce.date(),
     updated: z.coerce.date().optional(),
     category: z.enum(['culture', 'modification', 'driving', 'review', 'essay']),
     tags: z.array(z.string()).default([]),
-    /** Hero image path under /public. Local only — no hotlinking. */
     image: z.string().optional(),
     imageAlt: z.string().optional(),
-    /** Featured on the homepage cover slot. */
     featured: z.boolean().default(false),
     draft: z.boolean().default(false),
-    /** Pairs the zh/en versions of the same article, for the language switch. */
     translationKey: z.string(),
   }),
 });
 
-export const collections = { journal };
+// ------------------------------------------------------------------- fiction
+const fiction = defineCollection({
+  loader: glob({ pattern: '**/*.md', base: './src/content/fiction' }),
+  schema: z.object({
+    title: z.string(),
+    /** Logline / one-line hook. */
+    dek: z.string(),
+    published: z.coerce.date(),
+    updated: z.coerce.date().optional(),
+    genre: z.enum(['fanfiction', 'shortstory', 'flash', 'serial']),
+    /** "fanfiction" triggers the non-commercial disclaimer block. */
+    nature: z.enum(['fanwork', 'original']).default('original'),
+    /** Source work for fan fiction, e.g. an anime/game title. */
+    fandom: z.string().optional(),
+    /** Content rating, shown as a badge. */
+    rating: z.enum(['G', 'T', 'M', 'E']).default('G'),
+    status: z.enum(['complete', 'ongoing']).default('complete'),
+    /** Multi-part stories sharing a series title group together. */
+    series: z.string().optional(),
+    part: z.number().int().positive().optional(),
+    tags: z.array(z.string()).default([]),
+    image: z.string().optional(),
+    imageAlt: z.string().optional(),
+    featured: z.boolean().default(false),
+    draft: z.boolean().default(false),
+    /** Pairs translations. Optional: a story may exist in one language only. */
+    translationKey: z.string().optional(),
+  }),
+});
+
+export const collections = { automotive, fiction };

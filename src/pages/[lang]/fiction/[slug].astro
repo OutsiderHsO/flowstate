@@ -1,0 +1,441 @@
+---
+import { getCollection, render } from 'astro:content';
+import Base from '../../../layouts/Base.astro';
+import {
+  entrySlug,
+  entryLang,
+  entryHref,
+  formatDate,
+  wordCount,
+  formatCount,
+  getTranslationTarget,
+  getFiction,
+} from '../../../lib/articles';
+import { GENRES, t } from '../../../lib/i18n';
+import { isLang, type Lang } from '../../../lib/site';
+
+export async function getStaticPaths() {
+  const entries = await getCollection('fiction', ({ data }) => !data.draft);
+  return entries
+    .filter((entry) => isLang(entryLang(entry)))
+    .map((entry) => ({
+      params: { lang: entryLang(entry), slug: entrySlug(entry) },
+      props: { entry },
+    }));
+}
+
+const { entry } = Astro.props;
+const lang = entryLang(entry) as Lang;
+const strings = t[lang];
+const { data } = entry;
+const { Content } = await render(entry);
+
+const other: Lang = lang === 'zh' ? 'en' : 'zh';
+const switchHref = await getTranslationTarget(entry, 'fiction', other);
+/** A story may exist in one language only; the switcher then lands on the shelf. */
+const hasTranslation = switchHref !== `/${other}/fiction/`;
+
+const words = wordCount(entry.body ?? '', lang);
+const updated = data.updated ?? data.published;
+const isFanwork = data.nature === 'fanwork';
+const isMature = data.rating === 'M' || data.rating === 'E';
+const hasTags = data.tags.length > 0;
+
+// Sibling parts: same series, same language.
+const siblings = data.series
+  ? (await getFiction(lang)).filter(
+      (s) => s.data.series === data.series && s.id !== entry.id,
+    )
+  : [];
+---
+
+<Base
+  lang={lang}
+  track="fiction"
+  title={data.title}
+  description={data.dek}
+  section={`/fiction/${entrySlug(entry)}/`}
+  alternate={{ lang: other, href: switchHref }}
+  ogType="article"
+>
+  <article class="story-page">
+    <header class="story-header wrap">
+      <p class="eyebrow">
+        <span class="idx">{GENRES[data.genre][lang]}</span>
+        <span aria-hidden="true">—</span>
+        <span>{formatDate(data.published, lang)}</span>
+        <span aria-hidden="true">/</span>
+        <span>
+          {formatCount(words)} {strings.fiction.wordCount}
+        </span>
+      </p>
+
+      {
+        data.series && (
+          <p class="story-header__series mono">
+            {strings.labels.chapterOf}
+            {' · '}
+            <span class="story-header__series-name">{data.series}</span>
+            {data.part && ` #${String(data.part).padStart(2, '0')}`}
+          </p>
+        )
+      }
+
+      <h1 class="story-header__title">{data.title}</h1>
+      <p class="story-header__logline">{data.dek}</p>
+
+      <ul class="story-facts" aria-label="metadata">
+        <li class:list={['story-facts__item', { 'is-fan': isFanwork }]}>
+          {isFanwork ? `${strings.fiction.fandom}${data.fandom ? ` · ${data.fandom}` : ''}` : strings.fiction.original}
+        </li>
+        <li class:list={['story-facts__item', `rating-${data.rating}`, { 'is-mature': isMature }]}>
+          {strings.fiction.rating} {data.rating} · {strings.fiction.ratingNote[data.rating]}
+        </li>
+        <li class="story-facts__item">{strings.fiction.status[data.status]}</li>
+      </ul>
+
+      {
+        isFanwork && (
+          <div class="disclaimer" role="note">
+            <span class="disclaimer__label mono">Fanwork</span>
+            <p class="disclaimer__text">{strings.fiction.disclaimer}</p>
+          </div>
+        )
+      }
+
+      {
+        !hasTranslation && (
+          <p class="no-translation mono">
+            <span aria-hidden="true">◦</span> {strings.fiction.noTranslation}
+          </p>
+        )
+      }
+    </header>
+
+    {
+      data.image && (
+        <figure class="story-figure wrap">
+          <img src={data.image} alt={data.imageAlt ?? ''} fetchpriority="high" decoding="async" />
+          {data.imageAlt && <figcaption class="mono">{data.imageAlt}</figcaption>}
+        </figure>
+      )
+    }
+
+    <div class="story-body wrap">
+      <div class="prose">
+        <Content />
+      </div>
+    </div>
+
+    {
+      hasTags && (
+        <div class="wrap story-tags">
+          <ul aria-label="tags">
+            {data.tags.map((tag) => (
+              <li class="mono">{tag}</li>
+            ))}
+          </ul>
+        </div>
+      )
+    }
+
+    <footer class="story-footer wrap">
+      <p class="mono story-footer__meta">
+        {strings.labels.updated} {formatDate(updated, lang)}
+      </p>
+      <a class="back" href={`/${lang}/fiction/`}>
+        <span aria-hidden="true">←</span> {strings.labels.backToList}
+      </a>
+    </footer>
+  </article>
+</Base>
+
+<style>
+  .story-header {
+    padding-top: clamp(2.25rem, 5vw, 4rem);
+    max-width: 880px;
+    margin-inline: auto;
+  }
+
+  .story-header__series {
+    margin-top: 0.7rem;
+    font-size: 0.68rem;
+    color: var(--ink-faint);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .story-header__series-name {
+    color: var(--ink-muted);
+  }
+
+  .story-header__title {
+    margin-top: 0.6rem;
+    font-family: var(--font-serif);
+    font-weight: 600;
+    font-size: var(--step-3);
+    line-height: 1.14;
+    letter-spacing: -0.01em;
+    max-width: 30ch;
+    padding-bottom: 0.06em;
+  }
+
+  .story-header__logline {
+    margin-top: 1rem;
+    font-size: var(--step-1);
+    line-height: 1.55;
+    color: var(--ink-muted);
+    font-family: var(--font-serif);
+    max-width: 54ch;
+  }
+
+  /* ---------------- facts row ---------------- */
+  .story-facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 1.25rem;
+  }
+
+  .story-facts__item {
+    padding: 0.22rem 0.55rem;
+    border: 1px solid var(--line);
+    font-family: var(--font-mono);
+    font-size: 0.64rem;
+    letter-spacing: 0.06em;
+    color: var(--ink-faint);
+    text-transform: uppercase;
+  }
+
+  .story-facts__item.is-fan {
+    border-color: var(--accent-dim);
+    color: var(--accent);
+  }
+
+  .story-facts__item.is-mature {
+    border-color: #6d3a3a;
+    color: #e8b4b4;
+  }
+
+  /* ---------------- disclaimer ---------------- */
+  .disclaimer {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.9rem;
+    align-items: start;
+    margin-top: 1.5rem;
+    padding: 0.8rem 0.9rem;
+    border: 1px solid var(--line);
+    border-left: 2px solid var(--accent-dim);
+    background: var(--bg-elevated);
+  }
+
+  .disclaimer__label {
+    font-size: 0.6rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    padding-top: 0.15rem;
+  }
+
+  .disclaimer__text {
+    font-size: 0.76rem;
+    line-height: 1.65;
+    color: var(--ink-muted);
+  }
+
+  @media (max-width: 560px) {
+    .disclaimer {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0.35rem;
+    }
+  }
+
+  .no-translation {
+    margin-top: 0.9rem;
+    font-size: 0.68rem;
+    color: var(--ink-faint);
+  }
+
+  /* ---------------- figure ---------------- */
+  .story-figure {
+    margin-top: clamp(1.75rem, 4vw, 3rem);
+    margin-bottom: clamp(1.75rem, 4vw, 3rem);
+    max-width: 1080px;
+    margin-inline: auto;
+  }
+
+  .story-figure img {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    border: 1px solid var(--line);
+    filter: saturate(0.65) contrast(1.05) brightness(0.92);
+  }
+
+  .story-figure figcaption {
+    margin-top: 0.5rem;
+    font-size: 0.68rem;
+    color: var(--ink-faint);
+  }
+
+  /* ---------------- body ---------------- */
+  .story-body {
+    max-width: 880px;
+    margin-inline: auto;
+  }
+
+  .story-tags {
+    max-width: 880px;
+    margin-inline: auto;
+    margin-top: 2rem;
+  }
+
+  .story-tags ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .story-tags li {
+    padding: 0.2rem 0.55rem;
+    border: 1px solid var(--line);
+    font-size: 0.66rem;
+    color: var(--ink-faint);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .story-footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    max-width: 880px;
+    margin-inline: auto;
+    margin-top: clamp(2.5rem, 5vw, 4rem);
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--line);
+  }
+
+  .story-footer__meta {
+    font-size: 0.7rem;
+    color: var(--ink-faint);
+  }
+
+  .back {
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    letter-spacing: 0.06em;
+    color: var(--ink-muted);
+    transition: color 200ms var(--ease);
+  }
+
+  .back:hover {
+    color: var(--accent-bright);
+  }
+</style>
+
+<style is:global>
+  /* ---------------- Fiction prose ----------------
+     Longer line height and a serif body: this is reading, not scanning. */
+  .prose {
+    font-size: 1.06rem;
+    line-height: 1.9;
+    color: #d5d5d9;
+    max-width: var(--measure);
+  }
+
+  .prose > * + * {
+    margin-top: 1.05em;
+  }
+
+  .prose p {
+    color: #cfcfd4;
+  }
+
+  /* First paragraph after a scene break / heading gets no indent,
+     subsequent paragraphs breathe instead of being indented —
+     indentation is handled visually by spacing. */
+  .prose h2 {
+    margin-top: 2.6em;
+    font-family: var(--font-display);
+    font-size: clamp(1.15rem, 1rem + 0.6vw, 1.4rem);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    text-align: center;
+    color: var(--ink-muted);
+    scroll-margin-top: 96px;
+  }
+
+  .prose h2 + * {
+    margin-top: 1.4em;
+  }
+
+  .prose h3 {
+    margin-top: 2em;
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+
+  .prose strong {
+    color: var(--ink-strong);
+    font-weight: 600;
+  }
+
+  .prose em {
+    font-style: italic;
+  }
+
+  .prose hr {
+    width: 40px;
+    height: 1px;
+    border: 0;
+    background: var(--line-strong);
+    margin: 2.6em auto;
+  }
+
+  .prose blockquote {
+    margin: 2em 0;
+    padding: 0 1.25rem;
+    border-left: 2px solid var(--accent-dim);
+    color: var(--ink-muted);
+    font-style: italic;
+  }
+
+  .prose ul,
+  .prose ol {
+    padding-left: 1.25rem;
+  }
+
+  .prose ul {
+    list-style: none;
+  }
+
+  .prose ul > li {
+    position: relative;
+    padding-left: 0.35rem;
+  }
+
+  .prose ul > li::before {
+    content: '—';
+    position: absolute;
+    left: -1.25rem;
+    color: var(--accent-dim);
+  }
+
+  .prose ol {
+    list-style: decimal;
+  }
+
+  .prose a {
+    color: var(--accent-bright);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-color: var(--accent-dim);
+  }
+</style>

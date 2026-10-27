@@ -1,7 +1,8 @@
-﻿---
+---
 import Base from '../../../layouts/Base.astro';
 import { LANGS, SITE, type Lang } from '../../../lib/site';
 import { t } from '../../../lib/i18n';
+import { getAutomotive, getFiction } from '../../../lib/articles';
 
 export function getStaticPaths() {
   return LANGS.map((lang) => ({ params: { lang }, props: { lang } }));
@@ -15,42 +16,73 @@ const { lang } = Astro.props;
 const strings = t[lang];
 const other: Lang = lang === 'zh' ? 'en' : 'zh';
 
+const [cars, stories] = await Promise.all([getAutomotive(lang), getFiction(lang)]);
+
 const copy = {
   zh: {
-    title: '关于本刊',
-    lead: '这是一份个人汽车文化笔记。记录改装研究中读到的资料、驾驶时的体感、车辆的横向对比，以及一些不成体系的随笔。',
-    body: [
-      '本刊不追逐新闻快讯，也不做充值的“首试”。每篇文章都希望回答一个具体问题：某个零件为什么这样设计，某台车在什么场景下合理，某年某款之间究竟差在哪里。',
-      '写作原则是克制的。宁可少写一句赞美，也不写一句没有依据的结论。数据能查证的给出出处，主观感受明确标记为个人判断。',
+    title: '关于本站',
+    lead: 'FLOWSTATE 是我的个人站点，由两条线组成：一条讨论汽车，一条写虚构。它们看起来无关，其实共享同一种执念——把一件事拆开、看清楚，再重新组装。',
+    tracks: [
+      {
+        num: '01',
+        name: '汽车',
+        desc: '改装研究中读到的资料、驾驶时的体感、车辆的横向对比。不追快讯，不做充值首试，每篇尽量回答一个具体问题。',
+        count: `${cars.length} 篇`,
+        href: `/${lang}/automotive/`,
+      },
+      {
+        num: '02',
+        name: '文学',
+        desc: '短篇小说与同人文。有原创，也有基于已面世的角色和世界的再创作；后者都会标注来源并附非商业声明。',
+        count: `${stories.length} 篇`,
+        href: `/${lang}/fiction/`,
+      },
     ],
+    fanNote:
+      '关于同人作品：本站同人内容均为非商业创作，角色与世界观版权归原作者及权利方所有。依内容分级在作品页标注，请按标示阅读。',
     colophon: [
       ['技术栈', 'Astro · TypeScript · Markdown · CSS'],
       ['托管', '静态站点，无数据库、无登录、无评论'],
       ['成本', '零预算：免费托管 + 开源工具'],
-      ['语言', '中文 / English'],
+      ['语言', '中文 / English（部分作品仅有原文）'],
     ],
-    note: '当前所有文章均为结构与排版的占位示例，不代表真实测评。',
+    note: '示例内容为占位文本，用于展示版式，不代表真实测评或已发表作品。',
   },
   en: {
-    title: 'About this journal',
-    lead: 'A personal notebook on car culture — research notes from modification projects, how cars actually feel to drive, side-by-side comparisons, and the occasional unfiled essay.',
-    body: [
-      'This journal does not chase breaking news, and it does not publish sponsored first drives. Each article tries to answer one concrete question: why a part is designed the way it is, when a car makes sense, what actually separates one model year from another.',
-      'The writing rule is restraint. Better to leave out one compliment than to print a claim I cannot support. Verifiable data gets a source; subjective impressions are labelled as such.',
+    title: 'About',
+    lead: 'FLOWSTATE is a personal site in two lines: one about cars, one about fiction. They look unrelated, but they share one habit — taking something apart, looking at it properly, and putting it back together.',
+    tracks: [
+      {
+        num: '01',
+        name: 'Cars',
+        desc: 'Research from modification projects, what cars actually feel like, side-by-side comparisons. No news chases, no sponsored first drives.',
+        count: `${cars.length} pieces`,
+        href: `/${lang}/automotive/`,
+      },
+      {
+        num: '02',
+        name: 'Fiction',
+        desc: 'Short stories and fan fiction. Some original, some built on existing characters and worlds — the latter are always labelled, with a non-commercial notice.',
+        count: `${stories.length} works`,
+        href: `/${lang}/fiction/`,
+      },
     ],
+    fanNote:
+      'On fan works: everything here is non-commercial. Characters and settings belong to their original creators and rights holders. Ratings are shown on each story — please read accordingly.',
     colophon: [
       ['Stack', 'Astro · TypeScript · Markdown · CSS'],
       ['Hosting', 'Static site — no database, no accounts, no comments'],
       ['Cost', 'Zero budget: free hosting + open source'],
-      ['Languages', '中文 / English'],
+      ['Languages', '中文 / English — some pieces are single-language'],
     ],
-    note: 'Every article here is placeholder copy for layout purposes — not a real review.',
+    note: 'Sample content is placeholder text for layout purposes — not a real review or a published work.',
   },
 }[lang];
 ---
 
 <Base
   lang={lang}
+  track="about"
   title={strings.nav.about}
   section="/about/"
   alternate={{ lang: other, href: `/${other}/about/` }}
@@ -60,9 +92,28 @@ const copy = {
     <h1 class="about__title">{copy.title}</h1>
     <p class="about__lead">{copy.lead}</p>
 
-    <div class="about__body">
-      {copy.body.map((para) => <p>{para}</p>)}
-    </div>
+    <p class="about__sig mono">
+      <span>{SITE.author.name}</span>
+    </p>
+
+    <ul class="tracks-list">
+      {
+        copy.tracks.map((tr) => (
+          <li class="tracks-list__item">
+            <a class="tracks-list__link" href={tr.href}>
+              <span class="tracks-list__num mono">{tr.num}</span>
+              <span class="tracks-list__body">
+                <span class="tracks-list__name">{tr.name}</span>
+                <span class="tracks-list__desc">{tr.desc}</span>
+              </span>
+              <span class="tracks-list__count mono">{tr.count}</span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+
+    <p class="about__note">{copy.fanNote}</p>
 
     <section class="colophon" aria-labelledby="colophon-title">
       <h2 id="colophon-title" class="colophon__title">{strings.sections.colophon}</h2>
@@ -78,12 +129,7 @@ const copy = {
       </dl>
     </section>
 
-    <p class="about__note mono">{copy.note}</p>
-
-    <p class="about__author">
-      <span class="mono">{SITE.author.name}</span>
-      <span class="mono about__handle">{SITE.author.handle}</span>
-    </p>
+    <p class="about__placeholder mono">{copy.note}</p>
   </section>
 </Base>
 
@@ -99,7 +145,7 @@ const copy = {
     font-size: var(--step-3);
     letter-spacing: -0.04em;
     text-transform: uppercase;
-    line-height: 0.95;
+    line-height: 1.04;
   }
 
   .about__lead {
@@ -111,13 +157,80 @@ const copy = {
     max-width: 56ch;
   }
 
-  .about__body {
-    margin-top: 1.75rem;
+  .about__sig {
+    margin-top: 1rem;
+    font-size: 0.75rem;
+    color: var(--accent);
+  }
+
+  .tracks-list {
+    margin-top: clamp(2rem, 4vw, 3rem);
+    border-top: 1px solid var(--line);
+  }
+
+  .tracks-list__item {
+    border-bottom: 1px solid var(--line);
+  }
+
+  .tracks-list__link {
     display: grid;
+    grid-template-columns: 2rem minmax(0, 1fr) auto;
+    align-items: start;
     gap: 1rem;
-    max-width: var(--measure);
-    color: #c9c9cd;
-    line-height: 1.75;
+    padding: 1.1rem 0.25rem;
+    transition:
+      background 240ms var(--ease),
+      padding-inline 240ms var(--ease);
+  }
+
+  .tracks-list__link:hover {
+    background: linear-gradient(90deg, var(--accent-wash), transparent 65%);
+    padding-inline: 0.85rem 0.25rem;
+  }
+
+  .tracks-list__num {
+    font-size: 0.7rem;
+    color: var(--ink-faint);
+    padding-top: 0.2rem;
+  }
+
+  .tracks-list__body {
+    display: grid;
+    gap: 0.35rem;
+    min-width: 0;
+  }
+
+  .tracks-list__name {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: var(--step-1);
+    letter-spacing: -0.01em;
+    text-transform: uppercase;
+    color: var(--ink-strong);
+  }
+
+  .tracks-list__desc {
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: var(--ink-muted);
+    max-width: 52ch;
+  }
+
+  .tracks-list__count {
+    font-size: 0.68rem;
+    color: var(--ink-faint);
+    padding-top: 0.25rem;
+    white-space: nowrap;
+  }
+
+  .about__note {
+    margin-top: 1.75rem;
+    padding: 0.8rem 0.9rem;
+    border-left: 2px solid var(--accent-dim);
+    background: var(--accent-wash);
+    font-size: 0.76rem;
+    line-height: 1.7;
+    color: var(--ink-muted);
   }
 
   .colophon {
@@ -139,7 +252,7 @@ const copy = {
 
   .colophon__row {
     display: grid;
-    grid-template-columns: 8rem 1fr;
+    grid-template-columns: 8rem minmax(0, 1fr);
     gap: 1rem;
     padding: 0.7rem 0;
     border-bottom: 1px solid var(--line);
@@ -158,31 +271,23 @@ const copy = {
     font-size: 0.9rem;
   }
 
-  .about__note {
-    margin-top: 1.75rem;
-    padding: 0.7rem 0.9rem;
-    border-left: 2px solid var(--accent-dim);
-    background: var(--accent-wash);
-    font-size: 0.72rem;
-    color: var(--ink-muted);
-    line-height: 1.6;
-  }
-
-  .about__author {
-    margin-top: 2rem;
-    display: flex;
-    gap: 0.75rem;
-    font-size: 0.72rem;
-  }
-
-  .about__handle {
-    color: var(--accent);
+  .about__placeholder {
+    margin-top: 1.5rem;
+    font-size: 0.68rem;
+    color: var(--ink-faint);
   }
 
   @media (max-width: 520px) {
     .colophon__row {
-      grid-template-columns: 1fr;
+      grid-template-columns: minmax(0, 1fr);
       gap: 0.2rem;
+    }
+    .tracks-list__link {
+      grid-template-columns: 1.6rem minmax(0, 1fr);
+    }
+    .tracks-list__count {
+      grid-column: 2;
+      padding-top: 0;
     }
   }
 </style>

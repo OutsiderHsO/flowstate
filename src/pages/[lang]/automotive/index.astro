@@ -3,7 +3,7 @@ import Base from '../../../layouts/Base.astro';
 import ArticleCard from '../../../components/ArticleCard.astro';
 import { LANGS, type Lang } from '../../../lib/site';
 import { t, CATEGORIES, type CategoryKey } from '../../../lib/i18n';
-import { getArticles } from '../../../lib/articles';
+import { getAutomotive } from '../../../lib/articles';
 
 export function getStaticPaths() {
   return LANGS.map((lang) => ({ params: { lang }, props: { lang } }));
@@ -15,7 +15,8 @@ interface Props {
 
 const { lang } = Astro.props;
 const strings = t[lang];
-const all = await getArticles(lang);
+const all = await getAutomotive(lang);
+const other: Lang = lang === 'zh' ? 'en' : 'zh';
 
 const activeCategory = Astro.url.searchParams.get('category') as CategoryKey | null;
 const validCategory =
@@ -35,19 +36,18 @@ const filters: { key: string | null; label: string; count: number }[] = [
 ];
 
 const filterHref = (key: string | null) =>
-  key ? `/${lang}/journal/?category=${key}` : `/${lang}/journal/`;
-
-const other: Lang = lang === 'zh' ? 'en' : 'zh';
+  key ? `/${lang}/automotive/?category=${key}` : `/${lang}/automotive/`;
 ---
 
 <Base
   lang={lang}
-  title={strings.nav.journal}
-  section="/journal/"
-  alternate={{ lang: other, href: `/${other}/journal/` }}
+  track="automotive"
+  title={strings.nav.automotive}
+  section="/automotive/"
+  alternate={{ lang: other, href: `/${other}/automotive/` }}
 >
   <section class="wrap page-head">
-    <p class="eyebrow"><span class="idx">02</span> — {strings.nav.journal}</p>
+    <p class="eyebrow"><span class="idx">01</span> — {strings.nav.automotive}</p>
     <h1 class="page-head__title">{strings.sections.index}</h1>
     <p class="page-head__count mono">
       {String(list.length).padStart(2, '0')} {lang === 'zh' ? '篇文章' : 'entries'}
@@ -115,7 +115,7 @@ const other: Lang = lang === 'zh' ? 'en' : 'zh';
     font-size: var(--step-3);
     letter-spacing: -0.04em;
     text-transform: uppercase;
-    line-height: 0.95;
+    line-height: 1.04;
   }
 
   .page-head__count {

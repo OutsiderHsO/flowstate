@@ -1,11 +1,11 @@
 ---
-import type { Article } from '../lib/articles';
-import { articleHref, articleSlug, formatDate } from '../lib/articles';
+import type { AutomotiveEntry } from '../lib/articles';
+import { entryHref, entrySlug, formatDate } from '../lib/articles';
 import { CATEGORIES } from '../lib/i18n';
 import type { Lang } from '../lib/site';
 
 interface Props {
-  article: Article;
+  article: AutomotiveEntry;
   lang: Lang;
   /** index number shown in the eyebrow, e.g. 02 */
   index: number;
@@ -14,7 +14,7 @@ interface Props {
 
 const { article, lang, index, variant = 'default' } = Astro.props;
 const { data } = article;
-const href = articleHref(article);
+const href = entryHref(article, 'automotive');
 const pad = String(index).padStart(2, '0');
 ---
 
@@ -24,7 +24,7 @@ const pad = String(index).padStart(2, '0');
       data.image ? (
         <img src={data.image} alt={data.imageAlt ?? ''} loading="lazy" decoding="async" />
       ) : (
-        <div class="card__placeholder" data-slug={articleSlug(article)}>
+        <div class="card__placeholder" data-slug={entrySlug(article)}>
           <span class="card__placeholder-mark mono">{pad}</span>
         </div>
       )

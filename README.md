@@ -1,8 +1,24 @@
-# AUTOMOTIVE JOURNAL
+# FLOWSTATE
 
-一个零预算的双语（中文 / English）个人汽车文化博客。静态生成、暗色极客编辑风、无后端。
+一个零预算的双语（中文 / English）个人站点，由两条内容线组成：**汽车**与**文学**。
+静态生成、暗色极客编辑风、无后端。
 
-A zero-budget, bilingual personal automotive-culture journal. Static, dark, minimal-editorial, no backend.
+> A zero-budget bilingual personal site by **Sayo//n4ra**, in two tracks —
+> **automotive writing** and **fiction**. Static, dark, minimal-editorial, no backend.
+
+---
+
+## 0. 两条内容线 / Two tracks
+
+| | 汽车 Automotive | 文学 Fiction |
+| --- | --- | --- |
+| 路由 | `/zh/automotive/` · `/en/automotive/` | `/zh/fiction/` · `/en/fiction/` |
+| 内容 | 汽车文化、改装研究、驾驶体验、车辆测评、随笔 | 同人文、短篇小说、微型小说、连载 |
+| 强调色 | 铜金 `#c98b52` | 冷蓝灰 `#8f9dd0` |
+| 版式 | 横向摄影比例、杂志网格 | 竖向书籍比例、衬线长文 |
+| 特殊 | — | 同人声明、内容分级、单语言作品 |
+
+两条线共用同一套页头、导航、语言切换与页脚；切换时只替换强调色与排版细节。
 
 ---
 
@@ -12,9 +28,9 @@ A zero-budget, bilingual personal automotive-culture journal. Static, dark, mini
 | --- | --- | --- |
 | 框架 | **Astro 6**（静态输出） | 默认零 JS、构建快、Markdown 原生支持 |
 | 语言 | **TypeScript**（strict） | 内容模型有类型校验 |
-| 内容 | **Markdown + 内容集合（zod 校验）** | 写文章只写 `.md`，不需要碰模板 |
-| 样式 | **原生 CSS**（自定义属性 + 组件级 scoped style） | 无 Tailwind / 无 CSS-in-JS，依赖最少 |
-| 字体 | Google Fonts（Archivo / Inter / JetBrains Mono），本地回退 | 免费；断网时自动回退系统字体 |
+| 内容 | **Markdown + 内容集合（zod 校验）** | 写作只写 `.md`，不碰模板 |
+| 样式 | **原生 CSS**（自定义属性 + 组件级 scoped style） | 无 Tailwind、无 CSS-in-JS |
+| 字体 | Google Fonts（Archivo / Inter / JetBrains Mono），本地回退 | 免费；断网自动回退系统字体 |
 | 包管理 | pnpm（配合 Node 24） | 安装快、锁文件严格 |
 | 成本 | **0 元** | 开源工具 + 免费静态托管 |
 
@@ -27,6 +43,7 @@ A zero-budget, bilingual personal automotive-culture journal. Static, dark, mini
 ```
 automotive-journal/
 ├─ astro.config.mjs          # 站点配置（site、markdown、构建格式）
+├─ dev.ps1                   # 本机免 PATH 的一键启动脚本
 ├─ package.json
 ├─ pnpm-workspace.yaml       # pnpm 布局与构建脚本白名单
 ├─ tsconfig.json
@@ -36,53 +53,55 @@ automotive-journal/
 ├─ scripts/
 │  └─ shot.mjs               # 开发辅助：按真实移动视口截图（可选）
 └─ src/
-   ├─ content.config.ts      # 内容集合 schema
-   ├─ content/journal/
-   │  ├─ zh/*.md             # 中文文章
-   │  └─ en/*.md             # 英文文章
+   ├─ content.config.ts      # 两个内容集合的 schema
+   ├─ content/
+   │  ├─ automotive/zh/*.md  ├─ automotive/en/*.md
+   │  ├─ fiction/zh/*.md     └─ fiction/en/*.md
    ├─ layouts/Base.astro     # 页头 / 导航 / 语言切换 / 页脚
-   ├─ components/ArticleCard.astro
+   ├─ components/
+   │  ├─ ArticleCard.astro   # 汽车文章卡片
+   │  └─ StoryCard.astro     # 小说卡片（含分级角标）
    ├─ lib/
-   │  ├─ site.ts             # 站点名、标语、作者
-   │  ├─ i18n.ts             # 双语字典 + 栏目定义
-   │  └─ articles.ts         # 读取、排序、阅读时长、日期格式化
+   │  ├─ site.ts             # 站名、标语、作者、栏目常量
+   │  ├─ i18n.ts             # 双语字典、汽车栏目、文学体裁
+   │  └─ articles.ts         # 读取、排序、字数、日期、译文查找
    ├─ pages/
    │  ├─ index.astro         # / → 302 到 /zh/
    │  └─ [lang]/
-   │     ├─ index.astro      # /zh/ /en/  首页
-   │     ├─ journal/index.astro        # 文章列表 + 栏目筛选
-   │     ├─ journal/[slug].astro       # 文章详情
-   │     └─ about/index.astro          # 关于
-   └─ styles/global.css      # 设计令牌 + 基础样式
+   │     ├─ index.astro                    # 双栏目入口首页
+   │     ├─ automotive/index.astro         # 汽车列表 + 栏目筛选
+   │     ├─ automotive/[slug].astro        # 汽车文章
+   │     ├─ fiction/index.astro            # 书架 + 体裁筛选
+   │     ├─ fiction/[slug].astro           # 小说阅读页
+   │     └─ about/index.astro              # 关于
+   └─ styles/global.css      # 设计令牌 + 基础样式（含文学配色）
 ```
 
 ---
 
 ## 3. 本地运行 / Run locally
 
-前置：Node.js ≥ 22（本项目在 v24 上验证），pnpm ≥ 10。
-
 ### 3a. 本机直接运行（推荐，无需配置环境变量）
 
-本机的 Node 与 pnpm 由 DSH 内置运行时提供，**不在系统 PATH 里**，所以直接敲 `pnpm dev`
-会报 `无法将"pnpm"项识别为 cmdlet`。仓库根目录已附 `dev.ps1`，它会自动使用内置运行时：
+本机的 Node 与 pnpm 由 DSH 内置运行时提供，**不在系统 PATH 里**，直接敲 `pnpm dev` 会报错。
+仓库根目录的 `dev.ps1` 会自动使用内置运行时：
 
 ```powershell
 cd C:\Users\admin\Documents\deepseek-harness\default-workspace\automotive-journal
-
 .\dev.ps1              # 启动开发服务器 → http://localhost:4321
 .\dev.ps1 build        # 生产构建，输出到 dist\
 .\dev.ps1 preview      # 预览已构建的 dist\
-.\dev.ps1 install      # 重新/首次安装依赖
+.\dev.ps1 install      # 首次/重新安装依赖
 ```
 
-如果提示「禁止运行脚本」，改用：
+如果提示「禁止运行脚本」，或担心当前目录不对，用绝对路径调用：
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\dev.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File "C:\Users\admin\Documents\deepseek-harness\default-workspace\automotive-journal\dev.ps1" dev
 ```
 
-> 脚本不会修改 PATH、不会全局安装任何东西。需要时可以直接编辑其中的 `$Node` / `$Pnpm` 路径。
+> 脚本不改 PATH、不全局安装任何东西。开发服务器固定绑定 `127.0.0.1`
+> （Astro 在 Windows 上默认只监听 `[::1]`，会导致 `127.0.0.1:4321` 打不开）。
 
 ### 3b. 在你自己的机器上（已装 Node + pnpm）
 
@@ -91,118 +110,151 @@ cd automotive-journal
 pnpm install
 pnpm dev            # http://localhost:4321
 pnpm build          # 输出到 dist/
-pnpm preview        # 本地预览构建结果
+pnpm preview
 ```
 
-> **注意**：`pnpm-workspace.yaml` 里显式允许了 `esbuild` 与 `sharp` 的安装脚本（pnpm 默认拦截）。
-> 如果你在其它机器上克隆后安装，pnpm 会提示 `Ignored build scripts` —— 运行 `pnpm approve-builds`
-> 并允许这两个包即可。
+> `pnpm-workspace.yaml` 已显式允许 `esbuild` 与 `sharp` 的安装脚本（pnpm 默认拦截）。
+> 若克隆后提示 `Ignored build scripts`，运行 `pnpm approve-builds` 允许这两个包。
 
 ---
 
-## 4. 写一篇新文章 / Add an article
+## 4. 写内容 / Authoring
 
-在 `src/content/journal/zh/` 与 `src/content/journal/en/` 各放一个同名 `.md`：
+### 4.1 汽车文章
+
+放进 `src/content/automotive/zh/` 与 `src/content/automotive/en/`，同名 `.md`：
 
 ```markdown
 ---
 title: "标题（含特殊字符时务必加引号）"
-dek: "一句话摘要，显示在卡片与详情页顶部"
+dek: "一句话摘要"
 published: 2026-10-01
 category: culture        # culture | modification | driving | review | essay
 tags: [标签1, 标签2]
-image: /images/your-photo.webp      # 可选，放 public/images/
+image: /images/your-photo.webp
 imageAlt: "图片说明（可访问性必需）"
-featured: false          # true 会占据首页封面位
-draft: false             # true 则不出现在构建结果中
-translationKey: my-slug  # 中英两篇用同一个 key，语言切换才能互相跳转
+featured: false
+draft: false
+translationKey: my-slug  # 中英共用一个 key，语言切换才能互跳
 ---
 
 正文 Markdown。
 ```
 
-文件名即 URL：`zh/xxx.md` → `/zh/journal/xxx/`。
+### 4.2 文学（同人 / 原创）
 
-### 关于图片
+放进 `src/content/fiction/zh/` 或 `src/content/fiction/en/`：
 
-- 只使用**你自己拍摄或已获授权**的图片；本仓库的 `placeholder-*.svg` 为自制矢量占位图。
-- 放进 `public/images/`，正文用 `/images/文件名` 引用（不要外链热链）。
-- 建议宽 ≥ 1600px，使用 WebP/AVIF 以控制体积。
+```markdown
+---
+title: "深夜回程的第三站"
+dek: "一句话简介（会显示在卡片与详情页顶部）"
+published: 2026-10-12
+genre: shortstory        # fanfiction | shortstory | flash | serial
+nature: fanwork          # fanwork（同人，显示声明）/ original（原创）
+fandom: "原作名"          # 仅 nature: fanwork 时填写
+rating: T                # G | T | M | E → 显示分级角标与提示
+status: complete         # complete | ongoing
+series: "系列名"          # 可选，多篇同系列会标注
+part: 1                  # 可选，第几部分
+tags: [都市, 夜行]
+image: /images/your-cover.webp
+imageAlt: "封面说明"
+featured: true
+draft: false
+translationKey: night-platform   # 可选！不填就是单语言作品
+---
+
+正文。
+```
+
+**同人作品的自动声明**：只要 `nature: fanwork`，阅读页就会显示非商业声明块
+（角色与世界观版权归原作者），并在卡片上打「同人」标记。这不是可选项，是有意固化的。
+
+### 4.3 关于译文可选
+
+`translationKey` 在文学集合里是**可选**的。规则：
+
+- 填了 `translationKey` 且另一语言存在同 key 作品 → 语言切换直接跳过去；
+- 只有一种语言，或另一语言没有同 key → 语言切换落到该语言的**书架首页**，
+  并在作品页显示「这篇暂时只有中文/英文版本」。
+
+不会出现 404。这也是为什么中文作品不会出现在英文站列表里。
+
+### 4.4 关于图片
+
+- 只使用**你自己拍摄/绘制或已获授权**的图片。仓库里的 `placeholder-*.svg` 均为自制矢量占位图。
+- 放进 `public/images/`，用 `/images/文件名` 引用，不要外链热链。
+- 建议宽 ≥ 1600px，使用 WebP/AVIF 控制体积。
 
 ---
 
-## 5. 设计约定 / Design conventions
+## 5. 设计约定 / Design tokens
 
-所有视觉参数集中在 `src/styles/global.css` 的 CSS 变量里：
+全部集中在 `src/styles/global.css`：
 
 | 令牌 | 值 | 用途 |
 | --- | --- | --- |
-| `--bg` | `#0a0a0a` | 主背景 |
-| `--bg-sunken` | `#060607` | 页脚 / 代码块 |
-| `--ink` | `#ececec` | 正文 |
-| `--ink-muted` / `--ink-faint` | `#9a9a9f` / `#6b6b70` | 次级信息 |
-| `--accent` | `#c98b52` | 铜金点缀（序号、下划线、强调） |
+| `--bg` / `--bg-sunken` | `#0a0a0a` / `#060607` | 主背景 / 页脚与代码块 |
+| `--ink` / `--ink-muted` / `--ink-faint` | `#ececec` / `#9a9a9f` / `#6b6b70` | 正文 / 次级 / 弱化 |
+| `--accent` | `#c98b52`（铜金） | **默认（汽车）强调色** |
+| `--accent`（fiction） | `#8f9dd0`（冷蓝灰） | 由 `body[data-track='fiction']` 覆盖 |
 | `--font-display` | Archivo 900 | 冲击力标题 |
-| `--font-mono` | JetBrains Mono | 元信息、标签、编号 |
-| `--font-serif` | Iowan/Georgia/宋体 | 导语与引用 |
+| `--font-mono` | JetBrains Mono | 元信息、编号、标签 |
+| `--font-serif` | Iowan / Georgia / 宋体 | 导语、小说正文标题 |
 
-原则：**除图片外不堆砌车辆元素**。秩序感来自编号（`01 —`）、细分割线、等宽字体元信息与克制的单一强调色。
-装饰性图片一律加暗角与渐变叠加，保证叠加文字可读。
+原则：**除图片外不堆砌车辆元素**。秩序来自编号（`01 —`）、细分割线与等宽元信息。
+小说页刻意换用衬线体、更宽行高与居中的场景分隔符——是阅读，不是扫描。
 
 ---
 
 ## 6. 部署 / Deploy（全部免费）
 
-项目输出纯静态文件到 `dist/`，三种零成本方案任选：
+输出纯静态 `dist/`，三种零成本方案：
 
-### A. GitHub Pages（推荐，完全免费）
+### A. GitHub Pages（推荐）
 
-1. 在 GitHub 新建一个**公开**仓库（需要你自己登录并创建 —— 这一步我不代做）。
-2. 推送代码：
+1. 在 GitHub 新建**公开**仓库（需你自己登录创建）。
+2. 推送：
    ```bash
-   git remote add origin https://github.com/<你的用户名>/automotive-journal.git
+   git remote add origin https://github.com/<你的用户名>/flowstate.git
    git branch -M main
    git push -u origin main
    ```
-3. 在仓库 **Settings → Pages → Build and deployment** 里选择 **GitHub Actions**，
+3. 仓库 **Settings → Pages → Build and deployment** 选择 **GitHub Actions**，
    添加 Astro 官方 workflow（参考 <https://docs.astro.build/en/guides/deploy/github/>）。
-4. 修改 `astro.config.mjs` 的 `site` 为 `https://<用户名>.github.io/automotive-journal/`，
-   并同步设置 `base: '/automotive-journal/'`（若用项目子路径部署）。
-5. 推送到 `main` 即自动构建发布。
+4. 把 `astro.config.mjs` 的 `site` 改成真实地址；若用 `/<仓库名>/` 子路径，还要加 `base`。
+5. 之后推送即自动发布。
 
 ### B. Cloudflare Pages
 
-在 Cloudflare 控制台连接同一个仓库：构建命令 `pnpm build`，输出目录 `dist`。
-免费额度对个人博客绰绰有余。需要你在网页上完成授权。
+控制台连接同一仓库：构建命令 `pnpm build`，输出目录 `dist`。
 
 ### C. Netlify / Vercel
 
-同为免费静态托管，导入仓库后选 Astro 预设即可。
+导入仓库后选 Astro 预设即可。
 
-> 域名：`*.github.io` / `*.pages.dev` 子域名足以起步，**无需购买域名**。
+> `*.github.io` / `*.pages.dev` 子域名足够起步，**无需购买域名**。
 
 ---
 
-## 7. 已知限制与注意事项
+## 7. 已知限制
 
-- **Git 安装**：本机原本没有 Git。已安装便携版 MinGit 到 `C:\Users\admin\.tools\git`，
-  未修改全局 PATH 与全局 git 配置。同样不在 PATH 中，需要时直接写全路径：
+- **Git 安装**：本机原本没有 Git，已装便携版 MinGit 到 `C:\Users\admin\.tools\git`，
+  未改全局 PATH 与全局 git 配置。用法：
   ```powershell
   & "C:\Users\admin\.tools\git\cmd\git.exe" status
-  & "C:\Users\admin\.tools\git\cmd\git.exe" log --oneline
   ```
-  想长期方便，可执行一次（仅当前用户，可撤销）：
-  ```powershell
-  [Environment]::SetEnvironmentVariable('Path', [Environment]::GetEnvironmentVariable('Path','User') + ';C:\Users\admin\.tools\git\cmd', 'User')
-  ```
-- **内容均为占位**：所有文章都是版式示例，不是真实测评；首页与页脚都有明确标注。
-- **未使用的预留**：`readingTime` 的中文算法按字符数估算，英文按词数估算，仅作参考。
-- **字体需联网**：Google Fonts 加载失败时会回退到系统字体，不影响可用性。
-- 未包含（按需求刻意省略）：数据库、登录、评论、会员、付费 API、统计脚本。
+- **内容均为占位**：所有文章与小说都是版式示例，不是真实测评，也不是已发表作品。
+- **`site` 仍是占位**：`astro.config.mjs` 里是 `https://example.github.io`，部署前必须改。
+- **字体需联网**：Google Fonts 失败时回退系统字体，不影响可用。
+- **未包含**（按需求刻意省略）：数据库、登录、评论、会员、付费 API、统计脚本。
 
 ---
 
-## 8. 许可 / License
+## 8. 版权与同人声明
 
-代码：可自由用于个人项目。文章内容与图片版权归作者所有。
-本仓库不包含任何第三方受版权保护的图片、文章或商标。
+- 代码可自由用于个人项目。
+- 文章、小说与自制图片版权归 **Sayo//n4ra** 所有。
+- 同人作品为非商业创作，所涉原作角色与世界观版权归原作者及权利方所有，本站不主张所有权。
+- 本仓库不包含任何第三方受版权保护的图片、文章或商标。

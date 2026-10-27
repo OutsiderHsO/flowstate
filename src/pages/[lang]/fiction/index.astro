@@ -1,0 +1,272 @@
+---
+import Base from '../../../layouts/Base.astro';
+import StoryCard from '../../../components/StoryCard.astro';
+import { LANGS, type Lang } from '../../../lib/site';
+import { t, GENRES, type GenreKey } from '../../../lib/i18n';
+import { getFiction, entryHref, formatDate, wordCount, formatCount } from '../../../lib/articles';
+
+export function getStaticPaths() {
+  return LANGS.map((lang) => ({ params: { lang }, props: { lang } }));
+}
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const strings = t[lang];
+const all = await getFiction(lang);
+const other: Lang = lang === 'zh' ? 'en' : 'zh';
+
+const activeGenre = Astro.url.searchParams.get('genre') as GenreKey | null;
+const validGenre =
+  activeGenre && (Object.keys(GENRES) as string[]).includes(activeGenre) ? activeGenre : null;
+
+const list = validGenre ? all.filter((s) => s.data.genre === validGenre) : all;
+const [featured, ...rest] = list;
+
+const filters: { key: string | null; label: string; count: number }[] = [
+  { key: null, label: strings.labels.filterAll, count: all.length },
+  ...(Object.keys(GENRES) as GenreKey[]).map((key) => ({
+    key,
+    label: GENRES[key][lang],
+    count: all.filter((s) => s.data.genre === key).length,
+  })),
+];
+
+const filterHref = (key: string | null) =>
+  key ? `/${lang}/fiction/?genre=${key}` : `/${lang}/fiction/`;
+
+const totalWords = all.reduce((sum, s) => sum + wordCount(s.body ?? '', lang), 0);
+---
+
+<Base
+  lang={lang}
+  track="fiction"
+  title={strings.nav.fiction}
+  section="/fiction/"
+  alternate={{ lang: other, href: `/${other}/fiction/` }}
+>
+  <section class="wrap shelf-head">
+    <p class="eyebrow"><span class="idx">02</span> — {strings.nav.fiction}</p>
+    <h1 class="shelf-head__title">{strings.fiction.shelf}</h1>
+    <p class="shelf-head__stats mono">
+      <span>{String(all.length).padStart(2, '0')} {lang === 'zh' ? '篇' : 'works'}</span>
+      <span aria-hidden="true">/</span>
+      <span>{formatCount(totalWords)} {lang === 'zh' ? '字' : 'words'}</span>
+    </p>
+  </section>
+
+  <section class="wrap">
+    <nav class="filters" aria-label={lang === 'zh' ? '按体裁筛选' : 'Filter by genre'}>
+      <ul>
+        {
+          filters.map((f) => (
+            <li>
+              <a
+                href={filterHref(f.key)}
+                class:list={['filters__link', { 'is-active': f.key === validGenre }]}
+                aria-current={f.key === validGenre ? 'true' : undefined}
+              >
+                {f.label}
+                <span class="filters__count mono">{String(f.count).padStart(2, '0')}</span>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+
+    {
+      list.length === 0 ? (
+        <p class="empty mono">{strings.labels.empty}</p>
+      ) : (
+        <>
+          {featured && (
+            <article class="spotlight">
+              <a class="spotlight__link" href={entryHref(featured, 'fiction')}>
+                <p class="eyebrow">
+                  <span class="idx">01</span>
+                  <span aria-hidden="true">—</span>
+                  <span>{strings.sections.featured}</span>
+                  {featured.data.nature === 'fanwork' && (
+                    <span class="tag-fan mono">{strings.fiction.fandom}</span>
+                  )}
+                </p>
+                <h2 class="spotlight__title">{featured.data.title}</h2>
+                <p class="spotlight__logline">{featured.data.dek}</p>
+                <p class="spotlight__meta mono">
+                  {featured.data.fandom && <span class="spotlight__fandom">{featured.data.fandom}</span>}
+                  <span>{formatDate(featured.data.published, lang)}</span>
+                  <span aria-hidden="true">/</span>
+                  <span>
+                    {formatCount(wordCount(featured.body ?? '', lang))}{' '}
+                    {strings.fiction.wordCount}
+                  </span>
+                  <span aria-hidden="true">/</span>
+                  <span>
+                    {strings.fiction.rating} {featured.data.rating}
+                  </span>
+                </p>
+              </a>
+            </article>
+          )}
+
+          {rest.length > 0 && (
+            <div class="shelf-grid">
+              {rest.map((story, i) => (
+                <StoryCard story={story} lang={lang} index={i + 2} />
+              ))}
+            </div>
+          )}
+        </>
+      )
+    }
+  </section>
+</Base>
+
+<style>
+  .shelf-head {
+    padding-top: clamp(2.5rem, 6vw, 4.5rem);
+    padding-bottom: clamp(1.5rem, 3vw, 2.25rem);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 0.6rem 1rem;
+  }
+
+  @media (max-width: 520px) {
+    .shelf-head {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  .shelf-head .eyebrow {
+    grid-column: 1 / -1;
+  }
+
+  .shelf-head__title {
+    font-size: var(--step-3);
+    letter-spacing: -0.04em;
+    text-transform: uppercase;
+    line-height: 1.04;
+  }
+
+  .shelf-head__stats {
+    display: flex;
+    gap: 0.45rem;
+    font-size: 0.72rem;
+    color: var(--ink-faint);
+    padding-bottom: 0.35rem;
+  }
+
+  .filters {
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    margin-bottom: clamp(1.75rem, 3.5vw, 2.75rem);
+    overflow-x: auto;
+  }
+
+  .filters ul {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .filters__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.8rem 0.95rem;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    border-bottom: 1px solid transparent;
+    margin-bottom: -1px;
+    white-space: nowrap;
+    transition:
+      color 200ms var(--ease),
+      border-color 200ms var(--ease);
+  }
+
+  .filters__link:hover {
+    color: var(--ink-strong);
+  }
+
+  .filters__link.is-active {
+    color: var(--accent-bright);
+    border-bottom-color: var(--accent);
+  }
+
+  .filters__count {
+    font-size: 0.62rem;
+    color: var(--ink-faint);
+  }
+
+  /* ---------------- spotlight ---------------- */
+  .spotlight {
+    border-bottom: 1px solid var(--line-strong);
+    margin-bottom: clamp(2rem, 4vw, 3rem);
+  }
+
+  .spotlight__link {
+    display: grid;
+    gap: 0.7rem;
+    padding: clamp(1.5rem, 4vw, 2.75rem) 0.25rem;
+    transition: background 300ms var(--ease);
+  }
+
+  .spotlight__link:hover {
+    background: linear-gradient(90deg, var(--accent-wash), transparent 65%);
+  }
+
+  .spotlight__title {
+    font-size: var(--step-3);
+    letter-spacing: -0.035em;
+    line-height: 1.06;
+    max-width: 28ch;
+    padding-bottom: 0.06em;
+  }
+
+  .spotlight__logline {
+    font-family: var(--font-serif);
+    font-size: var(--step-1);
+    line-height: 1.5;
+    color: var(--ink-muted);
+    max-width: 52ch;
+  }
+
+  .spotlight__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    font-size: 0.68rem;
+    color: var(--ink-faint);
+  }
+
+  .spotlight__fandom {
+    color: var(--accent);
+  }
+
+  .tag-fan {
+    padding: 0.05rem 0.35rem;
+    border: 1px solid var(--accent-dim);
+    color: var(--accent);
+    font-size: 0.58rem;
+    letter-spacing: 0.1em;
+  }
+
+  /* ---------------- shelf grid ---------------- */
+  .shelf-grid {
+    display: grid;
+    gap: clamp(1.75rem, 3.5vw, 2.75rem) clamp(1.25rem, 2.5vw, 2rem);
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr));
+    padding-bottom: 1rem;
+  }
+
+  .empty {
+    padding: 3rem 0;
+    color: var(--ink-faint);
+  }
+</style>

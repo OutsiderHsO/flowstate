@@ -1,0 +1,228 @@
+---
+import type { FictionEntry } from '../lib/articles';
+import { entryHref, entrySlug, formatDate, wordCount, formatCount } from '../lib/articles';
+import { GENRES, t } from '../lib/i18n';
+import type { Lang } from '../lib/site';
+
+interface Props {
+  story: FictionEntry;
+  lang: Lang;
+  index: number;
+  variant?: 'default' | 'compact';
+}
+
+const { story, lang, index, variant = 'default' } = Astro.props;
+const { data } = story;
+const strings = t[lang];
+const href = entryHref(story, 'fiction');
+const pad = String(index).padStart(2, '0');
+const isFanwork = data.nature === 'fanwork';
+const words = formatCount(wordCount(story.body ?? '', lang));
+---
+
+<article class:list={['story', `story--${variant}`]}>
+  <a class="story__media" href={href} tabindex="-1" aria-hidden="true">
+    {
+      data.image ? (
+        <img src={data.image} alt={data.imageAlt ?? ''} loading="lazy" decoding="async" />
+      ) : (
+        <div class="story__placeholder">
+          <span class="story__rule" aria-hidden="true" />
+          <span class="story__mark mono">{pad}</span>
+        </div>
+      )
+    }
+    <span class="story__scrim" aria-hidden="true" />
+    <span class:list={['story__rating', `story__rating--${data.rating}`]} aria-hidden="true">
+      {data.rating}
+    </span>
+  </a>
+
+  <div class="story__body">
+    <p class="eyebrow">
+      <span class="idx">{pad}</span>
+      <span aria-hidden="true">—</span>
+      <span>{GENRES[data.genre][lang]}</span>
+      {
+        isFanwork && (
+          <span class="story__fan mono" title={strings.fiction.disclaimerShort}>
+            {strings.fiction.fandom}
+          </span>
+        )
+      }
+      <span class="story__date mono">{formatDate(data.published, lang)}</span>
+    </p>
+
+    <h3 class="story__title">
+      <a href={href} class="link-underline">{data.title}</a>
+    </h3>
+
+    {variant === 'default' && <p class="story__logline">{data.dek}</p>}
+
+    <p class="story__meta mono">
+      {
+        data.fandom && (
+          <span class="story__fandom" title={data.fandom}>
+            {data.fandom}
+          </span>
+        )
+      }
+      <span>{words} {strings.fiction.wordCount}</span>
+      <span aria-hidden="true">/</span>
+      <span>{strings.fiction.status[data.status]}</span>
+      <span aria-hidden="true">/</span>
+      <span>{strings.fiction.rating} {data.rating}</span>
+    </p>
+  </div>
+</article>
+
+<style>
+  .story {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .story__media {
+    position: relative;
+    display: block;
+    overflow: hidden;
+    /* Taller than a photo: stories get a "book cover" proportion. */
+    aspect-ratio: 4 / 5;
+    background: var(--surface);
+    border: 1px solid var(--line);
+  }
+
+  .story__media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: saturate(0.65) contrast(1.05) brightness(0.9);
+    transition:
+      transform 900ms var(--ease),
+      filter 500ms var(--ease);
+  }
+
+  .story:hover .story__media img {
+    transform: scale(1.03);
+    filter: saturate(0.8) contrast(1.05) brightness(1);
+  }
+
+  .story__scrim {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(120% 90% at 50% 40%, transparent 45%, rgba(0, 0, 0, 0.5) 100%),
+      linear-gradient(to top, rgba(0, 0, 0, 0.6), transparent 60%);
+    pointer-events: none;
+  }
+
+  /* Image-free cover: typographic, quiet, no car or genre clichés */
+  .story__placeholder {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: linear-gradient(160deg, var(--surface-2), var(--bg-sunken));
+  }
+
+  .story__rule {
+    position: absolute;
+    top: 50%;
+    left: 12%;
+    right: 12%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--line-strong), transparent);
+  }
+
+  .story__mark {
+    position: relative;
+    font-size: 0.8rem;
+    letter-spacing: 0.3em;
+    color: var(--accent-dim);
+    background: var(--bg-sunken);
+    padding: 0 0.7rem;
+  }
+
+  .story__rating {
+    position: absolute;
+    top: 0.6rem;
+    left: 0.6rem;
+    min-width: 1.5rem;
+    padding: 0.15rem 0.4rem;
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    text-align: center;
+    color: var(--ink-muted);
+    background: rgba(10, 10, 10, 0.72);
+    border: 1px solid var(--line-strong);
+    backdrop-filter: blur(6px);
+  }
+
+  .story__rating--M,
+  .story__rating--E {
+    color: #e8b4b4;
+    border-color: #6d3a3a;
+  }
+
+  .story__body {
+    padding-top: 0.9rem;
+  }
+
+  .story__date {
+    margin-left: auto;
+    font-size: 0.64rem;
+    color: var(--ink-faint);
+  }
+
+  .story__fan {
+    padding: 0.05rem 0.35rem;
+    border: 1px solid var(--accent-dim);
+    color: var(--accent);
+    font-size: 0.58rem;
+    letter-spacing: 0.1em;
+  }
+
+  .story__title {
+    margin-top: 0.55rem;
+    font-size: var(--step-1);
+    line-height: 1.28;
+    letter-spacing: -0.02em;
+    padding-bottom: 0.06em;
+  }
+
+  .story__logline {
+    margin-top: 0.55rem;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: var(--ink-muted);
+    max-width: 46ch;
+  }
+
+  .story__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.7rem;
+    font-size: 0.64rem;
+    color: var(--ink-faint);
+  }
+
+  .story__fandom {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--accent);
+  }
+
+  .story--compact .story__media {
+    aspect-ratio: 3 / 4;
+  }
+
+  .story--compact .story__title {
+    font-size: 1rem;
+    line-height: 1.3;
+  }
+</style>

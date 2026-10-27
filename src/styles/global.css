@@ -22,7 +22,7 @@
   --line-strong: #333338;
   --line-faint: rgba(255, 255, 255, 0.06);
 
-  /* Accent — copper / machine metal, used sparingly */
+  /* Accent — copper / machine metal, used sparingly (automotive track) */
   --accent: #c98b52;
   --accent-bright: #e2a56a;
   --accent-dim: #6d4a2c;
@@ -52,6 +52,17 @@
 
   --radius: 2px;
   --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+/*
+ * Fiction track: a cooler, quieter accent so a story page never reads as a
+ * car review. Same structure, different temperature.
+ */
+body[data-track='fiction'] {
+  --accent: #8f9dd0;
+  --accent-bright: #b3bfe8;
+  --accent-dim: #4a5477;
+  --accent-wash: rgba(143, 157, 208, 0.12);
 }
 
 /* ------------------------------------------------------------------ */

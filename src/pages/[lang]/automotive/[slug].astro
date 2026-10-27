@@ -2,8 +2,8 @@
 import { getCollection, render } from 'astro:content';
 import Base from '../../../layouts/Base.astro';
 import {
-  articleSlug,
-  articleLang,
+  entrySlug,
+  entryLang,
   formatDate,
   readingTime,
   getTranslationTarget,
@@ -12,17 +12,17 @@ import { CATEGORIES, t } from '../../../lib/i18n';
 import { isLang, type Lang } from '../../../lib/site';
 
 export async function getStaticPaths() {
-  const entries = await getCollection('journal', ({ data }) => !data.draft);
+  const entries = await getCollection('automotive', ({ data }) => !data.draft);
   return entries
-    .filter((entry) => isLang(articleLang(entry)))
+    .filter((entry) => isLang(entryLang(entry)))
     .map((entry) => ({
-      params: { lang: articleLang(entry), slug: articleSlug(entry) },
+      params: { lang: entryLang(entry), slug: entrySlug(entry) },
       props: { entry },
     }));
 }
 
 const { entry } = Astro.props;
-const lang = articleLang(entry) as Lang;
+const lang = entryLang(entry) as Lang;
 const strings = t[lang];
 const { data } = entry;
 const { Content, headings } = await render(entry);
@@ -31,16 +31,17 @@ const minutes = readingTime(entry.body ?? '', lang);
 const toc = headings.filter((h) => h.depth <= 3);
 const showToc = toc.length > 1;
 const other: Lang = lang === 'zh' ? 'en' : 'zh';
-const switchHref = await getTranslationTarget(entry, other);
+const switchHref = await getTranslationTarget(entry, 'automotive', other);
 const updated = data.updated ?? data.published;
 const hasTags = data.tags.length > 0;
 ---
 
 <Base
   lang={lang}
+  track="automotive"
   title={data.title}
   description={data.dek}
-  section={`/journal/${articleSlug(entry)}/`}
+  section={`/automotive/${entrySlug(entry)}/`}
   alternate={{ lang: other, href: switchHref }}
   ogType="article"
 >
@@ -104,8 +105,8 @@ const hasTags = data.tags.length > 0;
       <p class="mono article__meta">
         {strings.labels.updated} {formatDate(updated, lang)}
       </p>
-      <a class="back" href={`/${lang}/journal/`}>
-        <span aria-hidden="true">←</span> {strings.labels.backToJournal}
+      <a class="back" href={`/${lang}/automotive/`}>
+        <span aria-hidden="true">←</span> {strings.labels.backToList}
       </a>
     </footer>
   </article>

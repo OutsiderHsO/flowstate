@@ -7,11 +7,13 @@ interface Props {
   lang: Lang;
   title?: string;
   description?: string;
-  /** Current path without language, e.g. "/" or "/journal/foo/" */
+  /** Current path without language, e.g. "/" or "/automotive/foo/" */
   section?: string;
   /** Alternate URL for the other language, supplied by pages that know it. */
   alternate?: { lang: Lang; href: string };
   ogType?: 'website' | 'article';
+  /** Which editorial track is active; tints the header hairline. */
+  track?: 'home' | 'automotive' | 'fiction' | 'about';
 }
 
 const {
@@ -21,6 +23,7 @@ const {
   section = '/',
   alternate,
   ogType = 'website',
+  track = 'home',
 } = Astro.props;
 
 const strings = t[lang];
@@ -32,13 +35,12 @@ const currentPath = Astro.url.pathname;
 const switchHref = alternate?.href ?? `/${other}${section}`;
 
 const nav = [
-  { href: `/${lang}/`, label: strings.nav.home, key: 'home' },
-  { href: `/${lang}/journal/`, label: strings.nav.journal, key: 'journal' },
-  { href: `/${lang}/about/`, label: strings.nav.about, key: 'about' },
+  { href: `/${lang}/`, label: strings.nav.automotive, key: 'automotive', track: 'automotive' },
+  { href: `/${lang}/fiction/`, label: strings.nav.fiction, key: 'fiction', track: 'fiction' },
+  { href: `/${lang}/about/`, label: strings.nav.about, key: 'about', track: 'about' },
 ];
 
-const isActive = (href: string) =>
-  href === `/${lang}/` ? section === '/' : section.startsWith(href.replace(`/${lang}`, ''));
+const isActive = (key: string) => track === key;
 ---
 
 <!doctype html>
@@ -80,12 +82,12 @@ const isActive = (href: string) =>
     />
   </head>
 
-  <body>
+  <body data-track={track}>
     <a class="skip-link" href="#main">{lang === 'zh' ? '跳到正文' : 'Skip to content'}</a>
 
     <header class="site-header">
       <div class="wrap site-header__inner">
-        <a class="brand" href={`/${lang}/`} aria-label={`${SITE.name} — ${strings.nav.home}`}>
+        <a class="brand" href={`/${lang}/`} aria-label={`${SITE.name} — ${strings.nav.automotive}`}>
           <span class="brand__mark" aria-hidden="true">{SITE.mark}</span>
           <span class="brand__text">
             <span class="brand__name">{SITE.name}</span>
@@ -100,8 +102,12 @@ const isActive = (href: string) =>
                 <li>
                   <a
                     href={item.href}
-                    class:list={['site-nav__link', { 'is-active': isActive(item.href) }]}
-                    aria-current={isActive(item.href) ? 'page' : undefined}
+                    class:list={[
+                      'site-nav__link',
+                      `site-nav__link--${item.track}`,
+                      { 'is-active': isActive(item.track) },
+                    ]}
+                    aria-current={isActive(item.track) ? 'page' : undefined}
                   >
                     {item.label}
                   </a>
