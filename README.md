@@ -375,50 +375,69 @@ python scripts/novel_import.py 利维坦.pdf --series leviathan --title 利维�
 
 “建库”指把本地代码放到网上，让别人能访问。**只需做一次**，之后每次投稿自动更新。
 
-### 第一步：在 GitHub 建仓库（你自己操作，约 2 分钟）
+> **当前状态**：仓库已建好并推送完成 ——
+> <https://github.com/OutsiderHsO/flowstate>
+> 还差最后一步：在 Cloudflare 上连接这个仓库（见第三步）。
 
-1. 打开 <https://github.com/new>
-2. **Repository name** 填 `flowstate`（或任何你喜欢的名字）
-3. 可见性选 **Public**（免费托管 Pages 需要公开仓库）
-4. **不要**勾选 “Add a README file” / “Add .gitignore”（本地已有，会冲突）
-5. 点 **Create repository**，复制页面上显示的仓库地址，形如
-   `https://github.com/<用户名>/flowstate.git`
+### 第一步：GitHub 仓库（✅ 已完成）
 
-### 第二步：把本地代码推上去（把地址发我，我来做）
+<https://github.com/OutsiderHsO/flowstate>
+
+### 第二步：推送（✅ 已完成，含特殊网络处理）
+
+本机 **`github.com:443` 无法访问**（超时），但 **`ssh.github.com:443` 可以**。
+已通过 `~/.ssh/config` 把 `github.com` 映射到该端点，并配好 SSH 密钥：
 
 ```powershell
 $Git = "C:\Users\admin\.tools\git\cmd\git.exe"
-& $Git remote add origin https://github.com/<用户名>/flowstate.git
-& $Git push -u origin main
+$env:GIT_SSH_COMMAND = "ssh -o BatchMode=yes"
+& $Git push
 ```
 
-> 首次推送会弹出 GitHub 登录窗口。**密码那一栏要填 Personal Access Token**，
-> 不是账户密码（GitHub 早已不支持密码推送）。生成方式：
-> GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)
-> → Generate new token → 勾选 `repo` → 复制生成的字符串。
+> 若换电脑，需要重新生成密钥并把公钥加到
+> <https://github.com/settings/keys>，同时复制 `~/.ssh/config` 中的映射。
 
 ### 第三步：让 Cloudflare 自动发布（推荐）
 
-登录 Cloudflare 后：
+上传前先跑一次检查，避免云端构建失败：
+
+```powershell
+.\preflight.ps1          # 快速检查
+.\preflight.ps1 -Full    # 额外模拟一次干净安装
+```
+
+它会检查：`packageManager`/`engines` 是否声明、是否有本地绝对路径混进配置、
+`site` 是否还是占位域名、有无敏感文件被提交、本地是否落后于远程、以及能否通过
+`--frozen-lockfile` 安装（这正是 CI 做的事）。
+
+然后登录 Cloudflare：
 
 1. **Workers & Pages** → **Create** → **Pages** → **Connect to Git**
 2. 授权并选择 `flowstate` 仓库
-3. 构建设置填：
+3. 构建设置 —— 仓库里已有 `wrangler.toml`，Cloudflare 会**自动读取**，一般无需手填。
+   若界面仍要求填写，用：
+
    | 项目 | 值 |
    | --- | --- |
    | Framework preset | **Astro** |
    | Build command | `pnpm build` |
    | Build output directory | `dist` |
-   | 环境变量 | `NODE_VERSION` = **22**（重要，默认版本可能太旧） |
+   | 环境变量 `NODE_VERSION` | **22** |
+   | 环境变量 `PNPM_VERSION` | **11.8.0** |
+
 4. **Save and Deploy**
 
-几分钟后你会得到 `https://flowstate-xxx.pages.dev`。之后**每次 `.\publish.ps1 -Push`，
-Cloudflare 会自动重新构建并上线**，不需要再手动操作。
+几分钟后你会得到形如 `https://flowstate-xxxx.pages.dev` 的地址。
+之后**每次 `.\publish.ps1 -Push`，Cloudflare 会自动重新构建并上线**。
 
-### 第四步：改掉占位域名（部署后做一次）
+### 第四步：告诉 Cloudflare 你的真实域名（可选，但推荐）
 
-`astro.config.mjs` 里的 `site` 目前是 `https://example.github.io`，
-换成你的真实地址（例如 `https://flowstate-xxx.pages.dev`），否则分享链接和 SEO 会指向错误域名。
+`astro.config.mjs` 现在会读环境变量 `DEPLOY_URL`，默认值 `https://flowstate.pages.dev`。
+如果你的实际域名不同（通常带一串随机字符），在 Cloudflare 项目
+**Settings → Environment variables** 里加 `DEPLOY_URL = https://你的实际域名` 即可，
+**不用改代码**。
+
+它影响的是分享链接预览、搜索引擎收录用的规范地址，不影响网站能否访问。
 
 ### 备选：GitHub Pages
 

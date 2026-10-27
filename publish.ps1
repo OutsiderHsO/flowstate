@@ -46,7 +46,20 @@ if ($LASTEXITCODE -ne 0) {
   exit 1
 }
 
-# --------------------------------------------------------------- 2. build
+# ------------------------------------------------------------ 2. preflight
+# Only meaningful when we are about to push: a cloud build runs in a clean
+# checkout, so a missing packageManager or a dirty tree matters then.
+if ($Push) {
+  Step 'Preflight (will this build on Cloudflare?)'
+  & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $Root 'preflight.ps1')
+  if ($LASTEXITCODE -ne 0) {
+    Write-Host ''
+    Write-Host 'Preflight found blocking problems — nothing was published.' -ForegroundColor Red
+    exit 1
+  }
+}
+
+# --------------------------------------------------------------- 3. build
 Step 'Building the site'
 & $Node $Astro build
 if ($LASTEXITCODE -ne 0) {
