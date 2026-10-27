@@ -121,6 +121,74 @@ pnpm preview
 
 ## 4. 写内容 / Authoring
 
+> **想直接开始写？** 跳到 [4.0 投稿工作流](#40-投稿工作流--the-authoring-loop)。
+> 下面的 4.1 / 4.2 是字段说明，工具会自动帮你填好。
+
+### 4.0 投稿工作流 / The authoring loop
+
+日常只有四步，都能用一条命令完成：
+
+```powershell
+cd C:\Users\admin\Documents\deepseek-harness\default-workspace\automotive-journal
+
+# ① 新建一篇（自动生成 frontmatter，默认 draft: true 不会发布）
+python scripts/newpost.py new --track fiction --type shortstory --lang zh --title "我的新短篇"
+
+# ② 用编辑器打开生成的 .md，写入正文、补上 dek（简介）
+#    文件位置会打印出来，例如 src\content\fiction\zh\my-new-story.md
+
+# ③ 修改元数据（标题 / 简介 / 分级 / 标签…）
+python scripts/newpost.py edit my-new-story --dek "一句话简介" --tags "小说,都市" --rating T
+
+# ④ 发布并推送
+python scripts/newpost.py publish my-new-story
+.\publish.ps1 -Push
+```
+
+**`publish.ps1` 会做什么**（顺序固定，任一步失败就停下，绝不半途发布）：
+
+1. 检查全部文章的 frontmatter、编码、章节重复；
+2. 构建站点 —— 构建失败就不继续；
+3. 列出**仍是草稿**的文章，避免你以为发了其实没发；
+4. 加 `-Push` 时才提交并推送；不加则只在本地验证。
+
+### 4.0b 常用命令速查
+
+```powershell
+# 看所有文章的状态（LIVE / draft）
+python scripts/newpost.py list
+
+# 只看文学 / 只看中文
+python scripts/newpost.py list --track fiction --lang zh
+
+# 看某一篇的完整内容
+python scripts/newpost.py show leviathan-ch3
+
+# 连载新章节（part 自动编号，支持 12.5 这种小数）
+python scripts/newpost.py new --track fiction --type serial --series leviathan `
+    --part 14 --lang zh --title "第十四章标题"
+
+# 用现成的正文文件替换（会自动去掉 BOM）
+python scripts/newpost.py edit my-story --body .\草稿.md
+
+# 临时下架（改回草稿，不会删除文件）
+python scripts/newpost.py unpublish my-story
+
+# 只检查不修改
+python scripts/newpost.py lint
+```
+
+### 4.0c 编辑已有文章的两种方式
+
+| 场景 | 做法 |
+| --- | --- |
+| 改**正文** | 直接用编辑器改 `.md` 文件（推荐；保留全部格式） |
+| 改**元数据** | 用 `python scripts/newpost.py edit <slug> --某字段 "新值"`，只动那一个字段，其余原样保留 |
+| 整体替换正文 | `edit <slug> --body 新正文.md` |
+
+`<slug>` 支持模糊匹配：写 `ch12` 就能找到 `leviathan-ch12.md`；
+如果匹配到多篇，工具会列出来让你写完整些，**不会猜**。
+
 ### 4.1 汽车文章
 
 放进 `src/content/automotive/zh/` 与 `src/content/automotive/en/`，同名 `.md`：
@@ -303,33 +371,75 @@ python scripts/novel_import.py 利维坦.pdf --series leviathan --title 利维�
 
 ---
 
-## 6. 部署 / Deploy（全部免费）
+## 6. 建库与部署 / Publish
 
-输出纯静态 `dist/`，三种零成本方案：
+“建库”指把本地代码放到网上，让别人能访问。**只需做一次**，之后每次投稿自动更新。
 
-### A. GitHub Pages（推荐）
+### 第一步：在 GitHub 建仓库（你自己操作，约 2 分钟）
 
-1. 在 GitHub 新建**公开**仓库（需你自己登录创建）。
-2. 推送：
-   ```bash
-   git remote add origin https://github.com/<你的用户名>/flowstate.git
-   git branch -M main
-   git push -u origin main
-   ```
-3. 仓库 **Settings → Pages → Build and deployment** 选择 **GitHub Actions**，
-   添加 Astro 官方 workflow（参考 <https://docs.astro.build/en/guides/deploy/github/>）。
-4. 把 `astro.config.mjs` 的 `site` 改成真实地址；若用 `/<仓库名>/` 子路径，还要加 `base`。
-5. 之后推送即自动发布。
+1. 打开 <https://github.com/new>
+2. **Repository name** 填 `flowstate`（或任何你喜欢的名字）
+3. 可见性选 **Public**（免费托管 Pages 需要公开仓库）
+4. **不要**勾选 “Add a README file” / “Add .gitignore”（本地已有，会冲突）
+5. 点 **Create repository**，复制页面上显示的仓库地址，形如
+   `https://github.com/<用户名>/flowstate.git`
 
-### B. Cloudflare Pages
+### 第二步：把本地代码推上去（把地址发我，我来做）
 
-控制台连接同一仓库：构建命令 `pnpm build`，输出目录 `dist`。
+```powershell
+$Git = "C:\Users\admin\.tools\git\cmd\git.exe"
+& $Git remote add origin https://github.com/<用户名>/flowstate.git
+& $Git push -u origin main
+```
 
-### C. Netlify / Vercel
+> 首次推送会弹出 GitHub 登录窗口。**密码那一栏要填 Personal Access Token**，
+> 不是账户密码（GitHub 早已不支持密码推送）。生成方式：
+> GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)
+> → Generate new token → 勾选 `repo` → 复制生成的字符串。
 
-导入仓库后选 Astro 预设即可。
+### 第三步：让 Cloudflare 自动发布（推荐）
 
-> `*.github.io` / `*.pages.dev` 子域名足够起步，**无需购买域名**。
+登录 Cloudflare 后：
+
+1. **Workers & Pages** → **Create** → **Pages** → **Connect to Git**
+2. 授权并选择 `flowstate` 仓库
+3. 构建设置填：
+   | 项目 | 值 |
+   | --- | --- |
+   | Framework preset | **Astro** |
+   | Build command | `pnpm build` |
+   | Build output directory | `dist` |
+   | 环境变量 | `NODE_VERSION` = **22**（重要，默认版本可能太旧） |
+4. **Save and Deploy**
+
+几分钟后你会得到 `https://flowstate-xxx.pages.dev`。之后**每次 `.\publish.ps1 -Push`，
+Cloudflare 会自动重新构建并上线**，不需要再手动操作。
+
+### 第四步：改掉占位域名（部署后做一次）
+
+`astro.config.mjs` 里的 `site` 目前是 `https://example.github.io`，
+换成你的真实地址（例如 `https://flowstate-xxx.pages.dev`），否则分享链接和 SEO 会指向错误域名。
+
+### 备选：GitHub Pages
+
+不想用 Cloudflare 的话：仓库 **Settings → Pages → Source 选 GitHub Actions**，
+再添加 Astro 官方 workflow（<https://docs.astro.build/en/guides/deploy/github/>）。
+若仓库名不是 `<用户名>.github.io`，还要在 `astro.config.mjs` 加 `base: '/flowstate/'`。
+
+> `*.pages.dev` / `*.github.io` 子域名足够起步，**无需购买域名**。
+
+---
+
+## 6b. 日常投稿（部署完成后）
+
+```powershell
+python scripts/newpost.py new --track fiction --type shortstory --lang zh --title "..."
+# 写正文、补 dek
+python scripts/newpost.py publish <slug>
+.\publish.ps1 -Push          # 检查 → 构建 → 推送 → Cloudflare 自动上线
+```
+
+网站通常 **1～2 分钟**内更新。想先本地看效果：`.\dev.ps1 dev`。
 
 ---
 

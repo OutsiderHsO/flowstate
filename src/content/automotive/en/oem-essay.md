@@ -1,4 +1,4 @@
-﻿---
+---
 title: "[Sample] Three Meanings of \"Stock\""
 dek: "A short essay placeholder: when one person says \"I kept it stock\", they may mean three entirely different things."
 published: 2026-07-30

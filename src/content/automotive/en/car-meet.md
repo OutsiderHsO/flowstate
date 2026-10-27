@@ -1,4 +1,4 @@
-﻿---
+---
 title: "[Sample] The Weekend Parking Lot: Order Without an Organizer"
 dek: "No admin, no announcement — how does a crowd end up in the same lot at the same time? Placeholder piece for the culture column."
 published: 2026-09-02

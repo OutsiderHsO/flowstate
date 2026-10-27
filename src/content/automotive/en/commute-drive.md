@@ -1,4 +1,4 @@
-﻿---
+---
 title: "[Sample] Three Short-Shift Drills on the Morning Commute"
 dek: "Can the same boring commute double as a training route? A placeholder piece on driving feel."
 published: 2026-08-21

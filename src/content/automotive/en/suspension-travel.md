@@ -1,4 +1,4 @@
-﻿---
+---
 title: "[Sample] What 30mm of Lost Suspension Travel Actually Costs"
 dek: "A placeholder piece on the trade-off between stance and usable travel in daily driving."
 published: 2026-09-14

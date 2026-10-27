@@ -1,4 +1,4 @@
-﻿---
+---
 title: "[Sample] Compact Hatch Showdown: A Review Template"
 dek: "A placeholder template for review structure — scored categories, pros, cons and who it suits."
 published: 2026-08-08
