@@ -6,9 +6,10 @@ import { defineConfig } from 'astro/config';
 // alternates and Open Graph tags — if this is wrong, shared links point at
 // the wrong host.
 //
-// Set DEPLOY_URL in the Pages build environment to override without a code
-// change (e.g. after attaching a custom domain).
-const site = process.env.DEPLOY_URL ?? 'https://flowstate-b9y.pages.dev';
+// The project is a Worker (static assets), served at the address below.
+// Set DEPLOY_URL in the Cloudflare build environment to override without a
+// code change — e.g. after attaching a custom domain.
+const site = process.env.DEPLOY_URL ?? 'https://flowstate.3110398214.workers.dev';
 
 export default defineConfig({
   site,

@@ -48,11 +48,22 @@ else { Bad 'package.json has no "engines.node" — CI may pick Node 18 and fail'
 Head 'Build configuration'
 if (Test-Path wrangler.toml) {
   $w = Get-Content wrangler.toml -Raw
-  if ($w -match 'publish\s*=\s*"dist"') { Ok 'wrangler.toml publishes dist/' }
-  else { Warn 'wrangler.toml does not set publish = "dist"' }
-  if ($w -match 'NODE_VERSION') { Ok 'wrangler.toml pins NODE_VERSION' }
-  else { Warn 'wrangler.toml does not pin NODE_VERSION' }
-} else { Warn 'no wrangler.toml (you can configure the build in the dashboard instead)' }
+  # The project is a Worker with static assets: it runs `npx wrangler deploy`,
+  # so it needs [assets]. A Pages-style [build]/publish block makes Wrangler
+  # fail with "Missing entry-point".
+  if ($w -match '\[assets\]' -and $w -match 'directory\s*=\s*"\./dist"') {
+    Ok 'wrangler.toml serves dist/ as Worker static assets'
+  }
+  else { Bad 'wrangler.toml has no [assets] directory = "./dist" — wrangler deploy will fail' }
+
+  if ($w -match '^\s*publish\s*=') {
+    Bad 'wrangler.toml still contains a Pages-style publish key (unexpected for Workers)'
+  }
+  else { Ok 'no Pages-only keys in wrangler.toml' }
+
+  if ($w -match 'not_found_handling') { Ok 'wrangler.toml sets a 404 handler' }
+  else { Warn 'wrangler.toml has no not_found_handling (unknown paths return an empty 404)' }
+} else { Bad 'no wrangler.toml — the Worker has nothing to deploy' }
 
 $ws = Get-Content pnpm-workspace.yaml -Raw
 if ($ws -match 'storeDir|store-dir') { Warn 'a store directory is pinned in config — make sure it is not an absolute local path' }
