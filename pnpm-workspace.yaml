@@ -1,0 +1,10 @@
+packages: []
+
+nodeLinker: hoisted
+storeDir: .store-local
+
+# Build scripts are blocked by default (supply-chain safety).
+# Astro needs these two: esbuild (bundler) and sharp (image optimisation).
+allowBuilds:
+  esbuild: true
+  sharp: true

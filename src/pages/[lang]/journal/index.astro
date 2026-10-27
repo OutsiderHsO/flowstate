@@ -1,0 +1,183 @@
+---
+import Base from '../../../layouts/Base.astro';
+import ArticleCard from '../../../components/ArticleCard.astro';
+import { LANGS, type Lang } from '../../../lib/site';
+import { t, CATEGORIES, type CategoryKey } from '../../../lib/i18n';
+import { getArticles } from '../../../lib/articles';
+
+export function getStaticPaths() {
+  return LANGS.map((lang) => ({ params: { lang }, props: { lang } }));
+}
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const strings = t[lang];
+const all = await getArticles(lang);
+
+const activeCategory = Astro.url.searchParams.get('category') as CategoryKey | null;
+const validCategory =
+  activeCategory && (Object.keys(CATEGORIES) as string[]).includes(activeCategory)
+    ? activeCategory
+    : null;
+
+const list = validCategory ? all.filter((a) => a.data.category === validCategory) : all;
+
+const filters: { key: string | null; label: string; count: number }[] = [
+  { key: null, label: strings.labels.filterAll, count: all.length },
+  ...(Object.keys(CATEGORIES) as CategoryKey[]).map((key) => ({
+    key,
+    label: CATEGORIES[key][lang],
+    count: all.filter((a) => a.data.category === key).length,
+  })),
+];
+
+const filterHref = (key: string | null) =>
+  key ? `/${lang}/journal/?category=${key}` : `/${lang}/journal/`;
+
+const other: Lang = lang === 'zh' ? 'en' : 'zh';
+---
+
+<Base
+  lang={lang}
+  title={strings.nav.journal}
+  section="/journal/"
+  alternate={{ lang: other, href: `/${other}/journal/` }}
+>
+  <section class="wrap page-head">
+    <p class="eyebrow"><span class="idx">02</span> — {strings.nav.journal}</p>
+    <h1 class="page-head__title">{strings.sections.index}</h1>
+    <p class="page-head__count mono">
+      {String(list.length).padStart(2, '0')} {lang === 'zh' ? '篇文章' : 'entries'}
+    </p>
+  </section>
+
+  <section class="wrap">
+    <nav class="filters" aria-label={lang === 'zh' ? '按栏目筛选' : 'Filter by section'}>
+      <ul>
+        {
+          filters.map((f) => (
+            <li>
+              <a
+                href={filterHref(f.key)}
+                class:list={['filters__link', { 'is-active': f.key === validCategory }]}
+                aria-current={f.key === validCategory ? 'true' : undefined}
+              >
+                {f.label}
+                <span class="filters__count mono">{String(f.count).padStart(2, '0')}</span>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+
+    {
+      list.length === 0 ? (
+        <p class="empty mono">{strings.labels.empty}</p>
+      ) : (
+        <div class="journal-grid">
+          {list.map((entry, i) => (
+            <ArticleCard article={entry} lang={lang} index={i + 1} />
+          ))}
+        </div>
+      )
+    }
+  </section>
+</Base>
+
+<style>
+  .page-head {
+    padding-top: clamp(2.5rem, 6vw, 4.5rem);
+    padding-bottom: clamp(1.5rem, 3vw, 2.25rem);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 0.6rem 1rem;
+  }
+
+  @media (max-width: 520px) {
+    .page-head {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .page-head__count {
+      padding-bottom: 0;
+    }
+  }
+
+  .page-head .eyebrow {
+    grid-column: 1 / -1;
+  }
+
+  .page-head__title {
+    font-size: var(--step-3);
+    letter-spacing: -0.04em;
+    text-transform: uppercase;
+    line-height: 0.95;
+  }
+
+  .page-head__count {
+    font-size: 0.72rem;
+    color: var(--ink-faint);
+    padding-bottom: 0.35rem;
+  }
+
+  .filters {
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    margin-bottom: clamp(1.75rem, 3.5vw, 2.75rem);
+    overflow-x: auto;
+  }
+
+  .filters ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+  }
+
+  .filters__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.8rem 0.95rem;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    border-bottom: 1px solid transparent;
+    margin-bottom: -1px;
+    white-space: nowrap;
+    transition:
+      color 200ms var(--ease),
+      border-color 200ms var(--ease);
+  }
+
+  .filters__link:hover {
+    color: var(--ink-strong);
+  }
+
+  .filters__link.is-active {
+    color: var(--accent-bright);
+    border-bottom-color: var(--accent);
+  }
+
+  .filters__count {
+    font-size: 0.62rem;
+    color: var(--ink-faint);
+  }
+
+  .journal-grid {
+    display: grid;
+    gap: clamp(1.75rem, 3.5vw, 2.75rem) clamp(1.25rem, 2.5vw, 2rem);
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+    padding-bottom: 1rem;
+  }
+
+  .empty {
+    padding: 3rem 0;
+    color: var(--ink-faint);
+  }
+</style>

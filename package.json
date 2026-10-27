@@ -1,0 +1,16 @@
+{
+  "name": "automotive-journal",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A personal automotive culture journal. Bilingual (zh/en), static, dark editorial.",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro sync"
+  },
+  "dependencies": {
+    "astro": "^6.4.8"
+  }
+}

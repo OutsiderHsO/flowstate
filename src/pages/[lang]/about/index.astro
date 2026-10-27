@@ -1,0 +1,188 @@
+﻿---
+import Base from '../../../layouts/Base.astro';
+import { LANGS, SITE, type Lang } from '../../../lib/site';
+import { t } from '../../../lib/i18n';
+
+export function getStaticPaths() {
+  return LANGS.map((lang) => ({ params: { lang }, props: { lang } }));
+}
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const strings = t[lang];
+const other: Lang = lang === 'zh' ? 'en' : 'zh';
+
+const copy = {
+  zh: {
+    title: '关于本刊',
+    lead: '这是一份个人汽车文化笔记。记录改装研究中读到的资料、驾驶时的体感、车辆的横向对比，以及一些不成体系的随笔。',
+    body: [
+      '本刊不追逐新闻快讯，也不做充值的“首试”。每篇文章都希望回答一个具体问题：某个零件为什么这样设计，某台车在什么场景下合理，某年某款之间究竟差在哪里。',
+      '写作原则是克制的。宁可少写一句赞美，也不写一句没有依据的结论。数据能查证的给出出处，主观感受明确标记为个人判断。',
+    ],
+    colophon: [
+      ['技术栈', 'Astro · TypeScript · Markdown · CSS'],
+      ['托管', '静态站点，无数据库、无登录、无评论'],
+      ['成本', '零预算：免费托管 + 开源工具'],
+      ['语言', '中文 / English'],
+    ],
+    note: '当前所有文章均为结构与排版的占位示例，不代表真实测评。',
+  },
+  en: {
+    title: 'About this journal',
+    lead: 'A personal notebook on car culture — research notes from modification projects, how cars actually feel to drive, side-by-side comparisons, and the occasional unfiled essay.',
+    body: [
+      'This journal does not chase breaking news, and it does not publish sponsored first drives. Each article tries to answer one concrete question: why a part is designed the way it is, when a car makes sense, what actually separates one model year from another.',
+      'The writing rule is restraint. Better to leave out one compliment than to print a claim I cannot support. Verifiable data gets a source; subjective impressions are labelled as such.',
+    ],
+    colophon: [
+      ['Stack', 'Astro · TypeScript · Markdown · CSS'],
+      ['Hosting', 'Static site — no database, no accounts, no comments'],
+      ['Cost', 'Zero budget: free hosting + open source'],
+      ['Languages', '中文 / English'],
+    ],
+    note: 'Every article here is placeholder copy for layout purposes — not a real review.',
+  },
+}[lang];
+---
+
+<Base
+  lang={lang}
+  title={strings.nav.about}
+  section="/about/"
+  alternate={{ lang: other, href: `/${other}/about/` }}
+>
+  <section class="wrap about">
+    <p class="eyebrow"><span class="idx">03</span> — {strings.nav.about}</p>
+    <h1 class="about__title">{copy.title}</h1>
+    <p class="about__lead">{copy.lead}</p>
+
+    <div class="about__body">
+      {copy.body.map((para) => <p>{para}</p>)}
+    </div>
+
+    <section class="colophon" aria-labelledby="colophon-title">
+      <h2 id="colophon-title" class="colophon__title">{strings.sections.colophon}</h2>
+      <dl class="colophon__list">
+        {
+          copy.colophon.map(([k, v]) => (
+            <div class="colophon__row">
+              <dt class="mono">{k}</dt>
+              <dd>{v}</dd>
+            </div>
+          ))
+        }
+      </dl>
+    </section>
+
+    <p class="about__note mono">{copy.note}</p>
+
+    <p class="about__author">
+      <span class="mono">{SITE.author.name}</span>
+      <span class="mono about__handle">{SITE.author.handle}</span>
+    </p>
+  </section>
+</Base>
+
+<style>
+  .about {
+    max-width: 980px;
+    margin-inline: auto;
+    padding-top: clamp(2.5rem, 6vw, 4.5rem);
+  }
+
+  .about__title {
+    margin-top: 0.8rem;
+    font-size: var(--step-3);
+    letter-spacing: -0.04em;
+    text-transform: uppercase;
+    line-height: 0.95;
+  }
+
+  .about__lead {
+    margin-top: 1.25rem;
+    font-family: var(--font-serif);
+    font-size: var(--step-1);
+    line-height: 1.55;
+    color: var(--ink-muted);
+    max-width: 56ch;
+  }
+
+  .about__body {
+    margin-top: 1.75rem;
+    display: grid;
+    gap: 1rem;
+    max-width: var(--measure);
+    color: #c9c9cd;
+    line-height: 1.75;
+  }
+
+  .colophon {
+    margin-top: clamp(2.5rem, 5vw, 3.5rem);
+    border-top: 1px solid var(--line);
+    padding-top: 1.25rem;
+  }
+
+  .colophon__title {
+    font-size: 0.95rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+
+  .colophon__list {
+    margin: 0;
+  }
+
+  .colophon__row {
+    display: grid;
+    grid-template-columns: 8rem 1fr;
+    gap: 1rem;
+    padding: 0.7rem 0;
+    border-bottom: 1px solid var(--line);
+    align-items: baseline;
+  }
+
+  .colophon__row dt {
+    font-size: 0.72rem;
+    color: var(--ink-faint);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .colophon__row dd {
+    margin: 0;
+    font-size: 0.9rem;
+  }
+
+  .about__note {
+    margin-top: 1.75rem;
+    padding: 0.7rem 0.9rem;
+    border-left: 2px solid var(--accent-dim);
+    background: var(--accent-wash);
+    font-size: 0.72rem;
+    color: var(--ink-muted);
+    line-height: 1.6;
+  }
+
+  .about__author {
+    margin-top: 2rem;
+    display: flex;
+    gap: 0.75rem;
+    font-size: 0.72rem;
+  }
+
+  .about__handle {
+    color: var(--accent);
+  }
+
+  @media (max-width: 520px) {
+    .colophon__row {
+      grid-template-columns: 1fr;
+      gap: 0.2rem;
+    }
+  }
+</style>

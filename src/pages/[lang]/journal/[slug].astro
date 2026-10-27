@@ -1,0 +1,447 @@
+---
+import { getCollection, render } from 'astro:content';
+import Base from '../../../layouts/Base.astro';
+import {
+  articleSlug,
+  articleLang,
+  formatDate,
+  readingTime,
+  getTranslationTarget,
+} from '../../../lib/articles';
+import { CATEGORIES, t } from '../../../lib/i18n';
+import { isLang, type Lang } from '../../../lib/site';
+
+export async function getStaticPaths() {
+  const entries = await getCollection('journal', ({ data }) => !data.draft);
+  return entries
+    .filter((entry) => isLang(articleLang(entry)))
+    .map((entry) => ({
+      params: { lang: articleLang(entry), slug: articleSlug(entry) },
+      props: { entry },
+    }));
+}
+
+const { entry } = Astro.props;
+const lang = articleLang(entry) as Lang;
+const strings = t[lang];
+const { data } = entry;
+const { Content, headings } = await render(entry);
+
+const minutes = readingTime(entry.body ?? '', lang);
+const toc = headings.filter((h) => h.depth <= 3);
+const showToc = toc.length > 1;
+const other: Lang = lang === 'zh' ? 'en' : 'zh';
+const switchHref = await getTranslationTarget(entry, other);
+const updated = data.updated ?? data.published;
+const hasTags = data.tags.length > 0;
+---
+
+<Base
+  lang={lang}
+  title={data.title}
+  description={data.dek}
+  section={`/journal/${articleSlug(entry)}/`}
+  alternate={{ lang: other, href: switchHref }}
+  ogType="article"
+>
+  <article class="article">
+    <header class="article__header wrap">
+      <p class="eyebrow">
+        <span class="idx">{CATEGORIES[data.category][lang]}</span>
+        <span aria-hidden="true">—</span>
+        <span>{formatDate(data.published, lang)}</span>
+        <span aria-hidden="true">/</span>
+        <span>{minutes} {strings.labels.minRead}</span>
+      </p>
+
+      <h1 class="article__title">{data.title}</h1>
+      <p class="article__dek">{data.dek}</p>
+
+      {
+        hasTags && (
+          <ul class="article__tags" aria-label="tags">
+            {data.tags.map((tag) => (
+              <li class="mono">{tag}</li>
+            ))}
+          </ul>
+        )
+      }
+    </header>
+
+    {
+      data.image && (
+        <figure class="article__figure wrap">
+          <img src={data.image} alt={data.imageAlt ?? ''} fetchpriority="high" decoding="async" />
+          {data.imageAlt && <figcaption class="mono">{data.imageAlt}</figcaption>}
+        </figure>
+      )
+    }
+
+    <div class="article__body wrap">
+      <div class="prose">
+        <Content />
+      </div>
+
+      {
+        showToc && (
+          <aside class="toc" aria-label={strings.labels.contents}>
+            <p class="toc__title mono">{strings.labels.contents}</p>
+            <ol>
+              {toc.map((h) => (
+                <li class={`toc__item toc__item--d${h.depth}`}>
+                  <a href={`#${h.slug}`} class="toc__link">
+                    {h.text}
+                  </a>
+                </li>
+              ))}
+            </ol>
+          </aside>
+        )
+      }
+    </div>
+
+    <footer class="article__footer wrap">
+      <p class="mono article__meta">
+        {strings.labels.updated} {formatDate(updated, lang)}
+      </p>
+      <a class="back" href={`/${lang}/journal/`}>
+        <span aria-hidden="true">←</span> {strings.labels.backToJournal}
+      </a>
+    </footer>
+  </article>
+</Base>
+
+<style>
+  .article__header {
+    padding-top: clamp(2.25rem, 5vw, 4rem);
+    max-width: 980px;
+    margin-inline: auto;
+  }
+
+  .article__title {
+    margin-top: 0.85rem;
+    font-size: var(--step-3);
+    /* CJK glyphs are taller than Latin caps; 1.06 keeps ascenders inside the box. */
+    line-height: 1.06;
+    letter-spacing: -0.035em;
+    max-width: 22ch;
+    padding-bottom: 0.06em;
+  }
+
+  .article__dek {
+    margin-top: 1rem;
+    font-family: var(--font-serif);
+    font-size: var(--step-1);
+    line-height: 1.5;
+    color: var(--ink-muted);
+    max-width: 56ch;
+  }
+
+  .article__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 1.25rem;
+  }
+
+  .article__tags li {
+    padding: 0.2rem 0.55rem;
+    border: 1px solid var(--line);
+    font-size: 0.66rem;
+    color: var(--ink-faint);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .article__figure {
+    margin-top: clamp(1.75rem, 4vw, 3rem);
+    margin-bottom: clamp(1.75rem, 4vw, 3rem);
+    max-width: 1180px;
+    margin-inline: auto;
+  }
+
+  .article__figure img {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    border: 1px solid var(--line);
+    filter: saturate(0.85) contrast(1.05);
+  }
+
+  .article__figure figcaption {
+    margin-top: 0.5rem;
+    font-size: 0.68rem;
+    color: var(--ink-faint);
+  }
+
+  .article__body {
+    display: grid;
+    gap: clamp(1.5rem, 3vw, 3rem);
+    max-width: 980px;
+    margin-inline: auto;
+  }
+
+  @media (min-width: 1040px) {
+    .article__body {
+      grid-template-columns: minmax(0, var(--measure)) 190px;
+      align-items: start;
+    }
+  }
+
+  .toc {
+    order: -1;
+    padding-top: 0.35rem;
+  }
+
+  @media (min-width: 1040px) {
+    .toc {
+      order: 0;
+      position: sticky;
+      top: 92px;
+      border-left: 1px solid var(--line);
+      padding-left: 1rem;
+    }
+  }
+
+  .toc__title {
+    font-size: 0.64rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: 0.6rem;
+  }
+
+  .toc ol {
+    display: grid;
+    gap: 0.35rem;
+  }
+
+  .toc__item--d3 {
+    padding-left: 0.75rem;
+  }
+
+  .toc__link {
+    font-size: 0.78rem;
+    color: var(--ink-muted);
+    line-height: 1.4;
+    transition: color 180ms var(--ease);
+  }
+
+  .toc__link:hover {
+    color: var(--accent-bright);
+  }
+
+  .article__footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    max-width: 980px;
+    margin-inline: auto;
+    margin-top: clamp(2.5rem, 5vw, 4rem);
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--line);
+  }
+
+  .article__meta {
+    font-size: 0.7rem;
+    color: var(--ink-faint);
+  }
+
+  .back {
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    letter-spacing: 0.06em;
+    color: var(--ink-muted);
+    transition: color 200ms var(--ease);
+  }
+
+  .back:hover {
+    color: var(--accent-bright);
+  }
+</style>
+
+<style is:global>
+  /* ---------------- Prose ---------------- */
+  .prose {
+    font-size: 1.02rem;
+    line-height: 1.78;
+    color: #d9d9dc;
+    max-width: var(--measure);
+  }
+
+  .prose > * + * {
+    margin-top: 1.15em;
+  }
+
+  .prose h2 {
+    margin-top: 2.4em;
+    font-size: clamp(1.35rem, 1.1rem + 0.9vw, 1.75rem);
+    letter-spacing: -0.025em;
+    scroll-margin-top: 96px;
+  }
+
+  .prose h3 {
+    margin-top: 1.9em;
+    font-size: clamp(1.1rem, 1rem + 0.45vw, 1.28rem);
+    letter-spacing: -0.015em;
+    scroll-margin-top: 96px;
+  }
+
+  .prose h2 + *,
+  .prose h3 + * {
+    margin-top: 0.75em;
+  }
+
+  .prose h2::before {
+    content: '';
+    display: block;
+    width: 28px;
+    height: 1px;
+    background: var(--accent);
+    margin-bottom: 0.7rem;
+  }
+
+  .prose p {
+    color: #c9c9cd;
+  }
+
+  .prose strong {
+    color: var(--ink-strong);
+    font-weight: 600;
+  }
+
+  .prose em {
+    font-family: var(--font-serif);
+  }
+
+  .prose a {
+    color: var(--accent-bright);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+    text-decoration-color: var(--accent-dim);
+    transition: text-decoration-color 200ms var(--ease);
+  }
+
+  .prose a:hover {
+    text-decoration-color: var(--accent-bright);
+  }
+
+  .prose ul,
+  .prose ol {
+    padding-left: 1.25rem;
+  }
+
+  .prose ul {
+    list-style: none;
+  }
+
+  .prose ul > li {
+    position: relative;
+    padding-left: 0.35rem;
+  }
+
+  .prose ul > li::before {
+    content: '—';
+    position: absolute;
+    left: -1.25rem;
+    color: var(--accent-dim);
+  }
+
+  .prose ol {
+    list-style: decimal;
+  }
+
+  .prose ol > li::marker {
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: 0.85em;
+  }
+
+  .prose li + li {
+    margin-top: 0.45em;
+  }
+
+  .prose blockquote {
+    margin: 1.8em 0;
+    padding: 0.2em 0 0.2em 1.15rem;
+    border-left: 2px solid var(--accent-dim);
+    color: var(--ink-muted);
+    font-family: var(--font-serif);
+    font-size: 1.08em;
+    line-height: 1.6;
+  }
+
+  .prose blockquote p {
+    color: inherit;
+  }
+
+  .prose hr {
+    height: 1px;
+    border: 0;
+    background: var(--line);
+    margin: 2.4em 0;
+  }
+
+  .prose code {
+    font-family: var(--font-mono);
+    font-size: 0.86em;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    padding: 0.1em 0.35em;
+    color: var(--accent-bright);
+  }
+
+  .prose pre {
+    background: var(--bg-sunken) !important;
+    border: 1px solid var(--line);
+    padding: 1rem 1.1rem;
+    overflow-x: auto;
+    font-size: 0.84rem;
+    line-height: 1.6;
+  }
+
+  .prose pre code {
+    background: none;
+    border: 0;
+    padding: 0;
+    color: inherit;
+    font-size: inherit;
+  }
+
+  .prose img {
+    width: 100%;
+    border: 1px solid var(--line);
+  }
+
+  .prose table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+    font-family: var(--font-mono);
+  }
+
+  .prose th,
+  .prose td {
+    text-align: left;
+    padding: 0.55rem 0.7rem;
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+  }
+
+  .prose th {
+    color: var(--ink-faint);
+    font-weight: 500;
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+  }
+
+  .prose td {
+    color: #c9c9cd;
+  }
+</style>

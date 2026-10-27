@@ -1,0 +1,22 @@
+# build output
+dist/
+.astro/
+
+# dependencies (re-created by `pnpm install`)
+node_modules/
+.store-local/
+
+# local screenshots & tooling scratch
+.shots/
+
+# env & secrets — never commit
+.env
+.env.*
+*.pem
+*.key
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
